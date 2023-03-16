@@ -1,0 +1,2 @@
+This version of lemvos is pulished under the GPL-3.0. 
+You can find the newest version of the GPL at gnu.org.
