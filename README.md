@@ -20,8 +20,8 @@ I don't want your boat to sink :-) because I did not do much testing here and I 
 I have only tested on Linux. A windows build is not yet possible but it should be possible to port to windows.
 
 Compile with gcc 5.3.0 (the one I am using) using:
-> cd <lemvos>/src
-> make
+#> cd <lemvos>/src
+#> make
 ...
 
 This will create two tools <lemvos>/bin/gc and <lemvos>/bin/gv 
