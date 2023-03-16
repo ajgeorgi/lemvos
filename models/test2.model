@@ -1,0 +1,5 @@
+Model("test2"):
+owner("Andrej Georgi");
+at(0,0,0);created("CEST  3/Oct/2022 13:39");last_modified("CEST  3/Oct/2022 13:39")
+Solid1("coordinates"):at(0,0,0);0
+Poly1:at(0, 0, 0);V1(700,0,0);V2(0,700,0);V3(0,0,700);

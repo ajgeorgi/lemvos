@@ -1,0 +1,7 @@
+Model("Marker"):
+owner("Andrej Georgi");
+at(0,0,0);created("CEST  4/Oct/2022 07:33");last_modified("CEST  4/Oct/2022 07:33")
+Solid1("marker"):at(100, 100, 100);0
+Poly1:at(20, 0, 0);V1(-40,0,0);
+Poly2:at(0, 20, 0);V1(0,-40,0);
+Poly3:at(0, 0, 20);V1(0, 0,-40);
