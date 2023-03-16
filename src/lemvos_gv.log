@@ -1,0 +1,307 @@
+viewer.c:294:Screen.depth: d=24
+viewer.c:297:  visual: id=33, class=4, map_entris=256, bits_per_rgb=8, RGB=(ff0000,ff00,ff)
+configuration.c:79:Warning: Could not find config for "projection.cam_distance".
+configuration.c:79:Warning: Could not find config for "projection.cam_height".
+viewer.c:226:Font: char W=10, H=18, bl=15
+viewer.c:240:Font: char W=8, H=15, bl=12
+viewer.c:403:mainWindow = 100663297, root=1946
+configuration.c:79:Warning: Could not find config for "projection.cam_distance".
+configuration.c:79:Warning: Could not find config for "projection.cam_height".
+configuration.c:79:Warning: Could not find config for "shapes.circle_precision".
+configuration.c:79:Warning: Could not find config for "pdf.line_width".
+main.c:91:Locale: thousands_sep=",", grouping=""
+loader.c:70:Reading model from "lemvos.model".
+gobject.c:272:Warning: Object (1) without index!
+modelstore.c:76:Model "lemvos.first lemvos" created
+reader.c:274:Created: Thu Mar 16 13:21:00 2023
+, Modified: Thu Mar 16 13:21:00 2023
+
+***:reader.c:285:Reader: Time failed!!! Sun Jan  0 00:00:00 1900
+,  Sun Jan  0 00:00:00 1900
+
+reader.c:146:Missing index for "Model"!
+reader.c:150:Parent missing for "Model"!
+***:reader.c:109:Unknown object "(null)" in file!!
+loader.c:470:Reading config from "lemvos.config"
+gobject.c:272:Warning: Object (4) without index!
+gobject.c:272:Warning: Object (4) without index!
+gobject.c:272:Warning: Object (4) without index!
+gobject.c:272:Warning: Object (4) without index!
+creator_lemvos.c:57:Successfully initialized Solid2 of model "lemvos.first lemvos".
+modelcreator.c:234:Adding solid calculator lemvos.Calc BV
+***:vertex.c:1128:Error: Parallel vectors for normale!
+***:vertex.c:1128:Error: Parallel vectors for normale!
+vertex.c:720:Adding material "Water" to [le.S3]
+vertex.c:720:Adding material "Water" to [le.M4]
+sequencer.c:333:Initialize sequence
+sequencer.c:248:Rotating: "Hull(V:A.2)" [le.S2]
+vertex.c:1547:BB rotated (0,0,0,0) on [le.S2]
+gmath.c:1513:Removing attributes from [le.S2]
+sequencer.c:263:Triangulating: [le.S2]
+creator_lemvos.c:562:triangulate: le.S2: "Hull(V:A.2)"
+gmath.c:1513:Removing attributes from [le.S2]
+gmath.c:774:Number of frames processed: 13, Area = 35032561.185
+gmath.c:564:Finalizing [le.S2]
+***:gmath.c:596:Unconnected vertex [le.S2.P30.V24(emark)]
+gmath.c:605:No attributes at vertex [le.S2.P30.V24(mark,emark)]
+mea.c:559:Could not find value "# of attribs" of "Attributes" from [le.S2]
+gmath.c:708:Finalized [le.S2]:# of vertices = 312,
+   # of failed normale processes = 0,
+   # of attributes = 575,
+   # of vertices with missing attributes = 1
+   # of invalid attributes = 0
+   # of duplicates = 0
+   # of unconnected = 1
+   # of real duplicates = 0
+sequencer.c:165:Running: "UpdateWettetArea" on [le]
+gmath.c:1073:Intersection of [le.S2] with plane ((0,1,0),(0,0,0)). Result [le.M4]
+gmath.c:564:Finalizing [le.M4]
+***:gmath.c:266:No normale found for [le.M4.V2]
+gmath.c:605:No attributes at vertex [le.M4.V2(mark)]
+***:gmath.c:266:No normale found for [le.M4.V3]
+***:gmath.c:596:Unconnected vertex [le.M4.V3(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V3(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V4]
+***:gmath.c:596:Unconnected vertex [le.M4.V4(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V4(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V5]
+***:gmath.c:596:Unconnected vertex [le.M4.V5(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V5(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V6], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V7]
+***:gmath.c:596:Unconnected vertex [le.M4.V7(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V7(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V8]
+***:gmath.c:596:Unconnected vertex [le.M4.V8(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V8(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V9], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V10]
+***:gmath.c:596:Unconnected vertex [le.M4.V10(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V10(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V11]
+***:gmath.c:596:Unconnected vertex [le.M4.V11(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V11(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V12], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V13]
+***:gmath.c:596:Unconnected vertex [le.M4.V13(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V13(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V14], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V15]
+***:gmath.c:596:Unconnected vertex [le.M4.V15(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V15(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V16], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V17]
+***:gmath.c:596:Unconnected vertex [le.M4.V17(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V17(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V18], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V19]
+***:gmath.c:596:Unconnected vertex [le.M4.V19(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V19(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V20], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V21]
+***:gmath.c:596:Unconnected vertex [le.M4.V21(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V21(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V22], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V23]
+***:gmath.c:596:Unconnected vertex [le.M4.V23(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V23(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V24], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V25]
+***:gmath.c:596:Unconnected vertex [le.M4.V25(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V25(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V26], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V27]
+***:gmath.c:596:Unconnected vertex [le.M4.V27(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V27(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V28], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V29]
+***:gmath.c:596:Unconnected vertex [le.M4.V29(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V29(mark,emark)]
+***:gmath.c:274:Failed to flip normale of [le.M4.V30], center of [le.M4]=(0,0,0)
+***:gmath.c:266:No normale found for [le.M4.V31]
+***:gmath.c:596:Unconnected vertex [le.M4.V31(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V31(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V32]
+***:gmath.c:596:Unconnected vertex [le.M4.V32(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V32(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V33]
+gmath.c:605:No attributes at vertex [le.M4.V33(mark)]
+***:gmath.c:266:No normale found for [le.M4.V34]
+***:gmath.c:596:Unconnected vertex [le.M4.V34(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V34(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V35]
+***:gmath.c:596:Unconnected vertex [le.M4.V35(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V35(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V36]
+***:gmath.c:596:Unconnected vertex [le.M4.V36(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V36(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V37]
+gmath.c:605:No attributes at vertex [le.M4.V37(mark)]
+***:gmath.c:266:No normale found for [le.M4.V38]
+***:gmath.c:596:Unconnected vertex [le.M4.V38(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V38(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V39]
+***:gmath.c:596:Unconnected vertex [le.M4.V39(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V39(mark,emark)]
+***:gmath.c:266:No normale found for [le.M4.V40]
+***:gmath.c:596:Unconnected vertex [le.M4.V40(emark)]
+gmath.c:605:No attributes at vertex [le.M4.V40(mark,emark)]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V3=(-450,0,-1200,mark,emark)],
+ [le.M4.V4=(-450,0,-1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V3=(-450,0,-1200,mark,emark)]<-[le.M4.V4=(-450,0,-1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V4=(-450,0,-1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V3=(-450,0,-1200,mark,emark)],
+ [le.M4.V5=(-450,0,-1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V3=(-450,0,-1200,mark,emark)]<-[le.M4.V5=(-450,0,-1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V5=(-450,0,-1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V7=(450,0,-1200,mark,emark)],
+ [le.M4.V8=(450,0,-1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V7=(450,0,-1200,mark,emark)]<-[le.M4.V8=(450,0,-1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V8=(450,0,-1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V7=(450,0,-1200,mark,emark)],
+ [le.M4.V10=(450,0,-1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V7=(450,0,-1200,mark,emark)]<-[le.M4.V10=(450,0,-1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V10=(450,0,-1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V7=(450,0,-1200,mark,emark)],
+ [le.M4.V11=(450,0,-1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V7=(450,0,-1200,mark,emark)]<-[le.M4.V11=(450,0,-1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V11=(450,0,-1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V15=(450,0,-600,mark,emark)],
+ [le.M4.V17=(450,0,-600,mark,emark)]
+vertex.c:1743:Merging [le.M4.V15=(450,0,-600,mark,emark)]<-[le.M4.V17=(450,0,-600,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V17=(450,0,-600,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V21=(400,0,0,mark,emark)],
+ [le.M4.V23=(400,0,0,mark,emark)]
+vertex.c:1743:Merging [le.M4.V21=(400,0,0,mark,emark)]<-[le.M4.V23=(400,0,0,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V23=(400,0,0,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V27=(300,0,600,mark,emark)],
+ [le.M4.V29=(300,0,600,mark,emark)]
+vertex.c:1743:Merging [le.M4.V27=(300,0,600,mark,emark)]<-[le.M4.V29=(300,0,600,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V29=(300,0,600,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V31=(-300,0,1200,mark,emark)],
+ [le.M4.V32=(-300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V31=(-300,0,1200,mark,emark)]<-[le.M4.V32=(-300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V32=(-300,0,1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V34=(300,0,1200,mark,emark)],
+ [le.M4.V35=(300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V34=(300,0,1200,mark,emark)]<-[le.M4.V35=(300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V35=(300,0,1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V34=(300,0,1200,mark,emark)],
+ [le.M4.V36=(300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V34=(300,0,1200,mark,emark)]<-[le.M4.V36=(300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V36=(300,0,1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V34=(300,0,1200,mark,emark)],
+ [le.M4.V38=(300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V34=(300,0,1200,mark,emark)]<-[le.M4.V38=(300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V38=(300,0,1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V34=(300,0,1200,mark,emark)],
+ [le.M4.V39=(300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V34=(300,0,1200,mark,emark)]<-[le.M4.V39=(300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V39=(300,0,1200,mark,emark)] from [le.M4]
+***:gmath.c:81:Dublicate vertex found:
+ [le.M4.V34=(300,0,1200,mark,emark)],
+ [le.M4.V40=(300,0,1200,mark,emark)]
+vertex.c:1743:Merging [le.M4.V34=(300,0,1200,mark,emark)]<-[le.M4.V40=(300,0,1200,mark,emark)]: dist=(0,0,0), connections replaced 1
+mesh.c:234:Removed [le.M4.V40=(300,0,1200,mark,emark)] from [le.M4]
+gmath.c:686:Untouched [le.M4.V3=(-450,0,-1200,mark,emark)]
+  <- [le.M4.V2=(-450,0,-1200,mark)->(le.M4.V3)],
+  [le.M4.V12=(-450,0,-600,nval)->(le.M4.V13,le.S2.P22.V12,le.S2.P22.V13,le.S2.P24.V12)]
+  -> [le.M4.V13=(-450,0,-600,mark,emark)]
+gmath.c:686:Untouched [le.M4.V7=(450,0,-1200,mark,emark)]
+  <- [le.M4.V6=(450,0,-1200,nval)->(le.M4.V7,le.S2.P23.V12,le.S2.P23.V13)],
+  [le.M4.V14=(450,0,-600,nval)->(le.M4.V15,le.S2.P22.V13,le.S2.P24.V12,le.S2.P24.V13,le.S2.P23.V12)]
+  -> [le.M4.V15=(450,0,-600,mark,emark)]
+gmath.c:686:Untouched [le.M4.V13=(-450,0,-600,mark2)]
+  <- [le.M4.V12=(-450,0,-600,nval)->(le.M4.V13,le.S2.P22.V12,le.S2.P22.V13,le.S2.P24.V12)],
+  [le.M4.V2=(-450,0,-1200,mark)->(le.M4.V3)]
+  -> [le.M4.V3=(-450,0,-1200,mark,emark)]
+gmath.c:686:Untouched [le.M4.V15=(450,0,-600,mark2)]
+  <- [le.M4.V14=(450,0,-600,nval)->(le.M4.V15,le.S2.P22.V13,le.S2.P24.V12,le.S2.P24.V13,le.S2.P23.V12)],
+  [le.M4.V6=(450,0,-1200,nval)->(le.M4.V7,le.S2.P23.V12,le.S2.P23.V13)]
+  -> [le.M4.V7=(450,0,-1200,mark,emark)]
+gmath.c:686:Untouched [le.M4.V19=(-400,0,0,mark,emark)]
+  <- [le.M4.V18=(-400,0,0,nval)->(le.M4.V19,le.S2.P23.V12,le.S2.P23.V13,le.S2.P25.V12)],
+  [le.M4.V12=(-450,0,-600,nval)->(le.M4.V13,le.S2.P22.V12,le.S2.P22.V13,le.S2.P24.V12)]
+  -> [le.M4.V13=(-450,0,-600,mark2)]
+gmath.c:686:Untouched [le.M4.V21=(400,0,0,mark,emark)]
+  <- [le.M4.V20=(400,0,0,nval)->(le.M4.V21,le.S2.P23.V13,le.S2.P25.V12,le.S2.P25.V13,le.S2.P24.V12)],
+  [le.M4.V14=(450,0,-600,nval)->(le.M4.V15,le.S2.P22.V13,le.S2.P24.V12,le.S2.P24.V13,le.S2.P23.V12)]
+  -> [le.M4.V15=(450,0,-600,mark2)]
+gmath.c:686:Untouched [le.M4.V25=(-300,0,600,mark,emark)]
+  <- [le.M4.V24=(-300,0,600,nval)->(le.M4.V25,le.S2.P24.V12,le.S2.P24.V13,le.S2.P26.V12)],
+  [le.M4.V26=(300,0,600,nval)->(le.M4.V27,le.S2.P24.V13,le.S2.P26.V12,le.S2.P26.V13,le.S2.P25.V12)]
+  -> [le.M4.V27=(300,0,600,mark,emark)]
+gmath.c:686:Untouched [le.M4.V27=(300,0,600,mark2)]
+  <- [le.M4.V26=(300,0,600,nval)->(le.M4.V27,le.S2.P24.V13,le.S2.P26.V12,le.S2.P26.V13,le.S2.P25.V12)],
+  [le.M4.V24=(-300,0,600,nval)->(le.M4.V25,le.S2.P24.V12,le.S2.P24.V13,le.S2.P26.V12)]
+  -> [le.M4.V25=(-300,0,600,mark,emark)]
+gmath.c:686:Untouched [le.M4.V31=(-300,0,1200,mark,emark)]
+  <- [le.M4.V30=(-300,0,1200,nval)->(le.M4.V31,le.S2.P25.V12)],
+  [le.M4.V24=(-300,0,600,nval)->(le.M4.V25,le.S2.P24.V12,le.S2.P24.V13,le.S2.P26.V12)]
+  -> [le.M4.V25=(-300,0,600,mark2)]
+***:vertex.c:394:Invalid object found at 0x1800d34!
+gmath.c:686:Untouched [le.M4.V34=(300,0,1200,mark,emark)]
+  <- [le.M4.V33=(300,0,1200,mark)->(le.M4.V34,le.M4.V34)],
+  [le.M4.V26=(300,0,600,nval)->(le.M4.V27,le.S2.P24.V13,le.S2.P26.V12,le.S2.P26.V13,le.S2.P25.V12)]
+  -> [le.M4.V27=(300,0,600,mark2)]
+mea.c:559:Could not find value "# of attribs" of "Attributes" from [le.M4]
+gmath.c:708:Finalized [le.M4]:# of vertices = 39,
+   # of failed normale processes = 39,
+   # of attributes = 12,
+   # of vertices with missing attributes = 27
+   # of invalid attributes = 0
+   # of duplicates = 0
+   # of unconnected = 24
+   # of real duplicates = 0
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+gobject.c:176:Warning: Type 6 for CObject failed. Real type is 1.
+sequencer.c:184:Successfull finalized/initialized UpdateWettetArea [le].
+sequencer.c:165:Running: "UpdateSelection" on [le]
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+gobject.c:176:Warning: Type 6 for CObject failed. Real type is 1.
+sequencer.c:184:Successfull finalized/initialized UpdateSelection [le].
+sequencer.c:341:Running sequence
+sequencer.c:165:Running: "Mass" on [le.S2]
+sequencer.c:176:Successfull calculation of Mass [le.S2] created 2 results.
+sequencer.c:165:Running: "Bouyancy" on [le.S2]
+sequencer.c:176:Successfull calculation of Bouyancy [le.S2] created 1 results.
+sequencer.c:165:Running: "Attributes" on [le.S2]
+sequencer.c:176:Successfull calculation of Attributes [le.S2] created 8 results.
+sequencer.c:165:Running: "Mass" on [le.M4]
+sequencer.c:176:Successfull calculation of Mass [le.M4] created 2 results.
+sequencer.c:165:Running: "Bouyancy" on [le.M4]
+sequencer.c:176:Successfull calculation of Bouyancy [le.M4] created 1 results.
+sequencer.c:165:Running: "Attributes" on [le.M4]
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+***:gmath.c:1982:Unknown unit "?" for weight calculation
+sequencer.c:176:Successfull calculation of Attributes [le.M4] created 6 results.
+sequencer.c:353:Finalize sequence
+sequencer.c:363:3 objects in "lemvos.first lemvos" and 5 calculations available.
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+configuration.c:79:Warning: Could not find config for "viewer.background_color".
+viewer.c:454:View reseted, cam: distance = 1200.00, height = -10000.00
+configuration.c:79:Warning: Could not find config for "viewer.background_color".
+viewer.c:454:View reseted, cam: distance = 1200.00, height = -10000.00
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+controller.c:503:Loaded: Model "lemvos.first lemvos" size=(8500,12500,1500)
+#obj=3, #vertices=819, #original=339.
+
+viewer.c:767:Reparent of 100663297, parent is 18941214 from 100663297
+modelstore.c:538:Clearing: vertex count=326
+gobject.c:176:Warning: Type 8 for CObject failed. Real type is 2.
+gobject.c:176:Warning: Type 8 for CObject failed. Real type is 2.
+gobject.c:176:Warning: Type 2 for CObject failed. Real type is 8.
+../../commen/commen.c:165:normal program termination.
