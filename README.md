@@ -23,8 +23,11 @@ Unfortunately I don't know how to create an empty ./bin foulder in githup so you
 Compile with gcc 5.3.0 (the one I am using) using:
   
 #> cd (lemvos)
+
 #> mkdir bin
+
 #> cd (lemvos)/src  
+
 #> make
   
 ...
