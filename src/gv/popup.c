@@ -127,6 +127,10 @@ void removeChoices()
     {
         if (choice_buttons[j])
         {
+            if (choice_buttons[j]->data)
+            {
+                memory_free(choice_buttons[j]->data);
+            }
             widgetRemoveWidget(choice_buttons[j]);
         }
     }
@@ -243,11 +247,12 @@ int popupButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
             {
                 if (popup_choice_visible)
                 {
-                    char filename[100];
+                    // char filename[100];
                     if (NULL == popup_data_visible)
                     {
-                        snprintf(filename,sizeof(filename),"%s.%s",w->name,popupFileExtension);
-                        popup_data_visible = (void*)filename;
+                        popup_data_visible = choice_buttons[i]->data;
+                        // snprintf(filename,sizeof(filename),"%s.%s",w->name,popupFileExtension);
+                        // popup_data_visible = (void*)filename;
                     }
                     popup_choice_visible(i,popup_data_visible);
                 }
@@ -259,7 +264,10 @@ int popupButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
                 widgetEnableDesktop(1, NULL);
                 widgetInvisible(choiceWidget);
                 removeChoices();
-            }            
+            }   
+
+            LOG_FLUSH;
+
             return 1;
         }        
     }
@@ -512,26 +520,60 @@ void fillFileChoices(const char* path)
         
         unsigned int button_index = 0;
         int i = 0;
+        // LOG("File extension \"%s\"\n",popupFileExtension);
+        
         for (struct dirent *d = namelist[i]; d && (i<num_dir); d = namelist[++i])
         {
             int type = d->d_type;
-            // fprintf(stderr,"FN: %i \"%s\"\n",type,d->d_name);
             const char *ext = strrchr(d->d_name,'.');
             const char *sep = strrchr(d->d_name,'/');
             if (ext)
             {
                 if (sep < ext)
                 {
-                    if (strcasecmp(&ext[1],popupFileExtension))
-                    {
-                        if (DT_DIR != type)
+                    // No seperator but extension
+                                        
+                    char buffer[100];
+                    char *b = buffer;
+                    if (DT_REG == d->d_type)
+                    {                    
+                        type = 0;
+                        const char *extension = popupFileExtension;
+
+                        while(1)
                         {
-                            type = 0;
+                            if ((';' == *extension) || (0 == *extension))
+                            {                            
+                                // LOG("Checking extension: \"%s\" against \"%s\"\n",buffer, &ext[1]);
+                                if (0 == strcasecmp(&ext[1],buffer))
+                                {
+                                    type = d->d_type;   
+                                    break;
+                                }
+                                b = buffer;
+                                extension++;
+                            }
+                            
+                            if ((0 == *extension) || (extension - popupFileExtension >= (int)sizeof(buffer)))
+                            {
+                                break;
+                            }
+                            
+                            *b = *extension;
+                            b++;
+                            *b = 0;
+                            extension++;
                         }
                     }
+                    else                         
+                    if (DT_DIR != d->d_type)
+                    {
+                        type = 0;
+                    }                                                  
                 }
                 else
                 {
+                    // seperator and extension
                     if (DT_DIR != type)
                     {                        
                         type = 0;
@@ -540,6 +582,7 @@ void fillFileChoices(const char* path)
             }
             else
             {
+                // No extension and no seperator
                 if (DT_DIR != type)
                 {                        
                     type = 0;
@@ -550,7 +593,7 @@ void fillFileChoices(const char* path)
             {
                 if ((button_index < sizeof(choice_buttons)/sizeof(choice_buttons[0])))
                 {
-                    char label[100];
+                    char label[200];
                     const char *name = basename(d->d_name);
                     strncpy(label,name,sizeof(label));
 
@@ -592,6 +635,8 @@ void fillFileChoices(const char* path)
                         if (DT_REG == type)
                         {
                             choice_buttons[button_index]->color = aperalGetColor(GAPERAL_CHOICE_BUTTON_HIGHLIGHT);
+                            
+                            choice_buttons[button_index]->data = memory_strdup(name);
                         }
                         
                         widgetVisible(choice_buttons[button_index]);
@@ -612,6 +657,7 @@ void fillFileChoices(const char* path)
         
         position(choiceWidget);
     }
+    
 }
 
 int fileChoice(const char* text, const char* path, const char* extension, PopupUserChoice choice)

@@ -620,12 +620,14 @@ int widgetClearWidget(ViewerWidget *widget)
                 }
                 else
                 {
+                    /*
                     int width = widget->width;
                     if (VIEWERWIDGET_TYPE_TAP_BUTTON == widget->wtype)
                     {
                         width -= 2;
                     }
-                    
+                    */
+
                     XClearArea(_viewerDisplay, _viewerMainWindow,  
                                 widget->x, widget->y, 
                                 widget->width,
@@ -865,7 +867,7 @@ int widgetAddChild(ViewerWidget *widget, ViewerWidget *child)
         {
             if ((NULL != child->parent) && (widget != (ViewerWidget *)child->parent))
             {
-                viewerPrintError(0, "Warning: replacing parent on \"%s\"\n", child->name?child->name:"<null>");
+                viewerPrintError(0, "Warning: replacing parent on \"%s\"\n", child->name);
             }
             
             child->parent = (GObject*)widget;

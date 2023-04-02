@@ -3,7 +3,9 @@
 #include <X11/Xaw/Viewport.h>
 #include <X11/Core.h>
 #include <stdio.h>
-#include <error.h>
+
+#include <stdio.h>
+
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
@@ -246,8 +248,9 @@ static int createGC()
     if (NULL == _viewerGC)
     {
         viewerPrintError(0, "GC failed\n");
-        
-        error(0, 0, "GC failed\n");
+
+        perror("GC failed\n");
+
         return -1;
     }    
     
@@ -315,8 +318,8 @@ int viewerInit(int argc, char **argv, CommonErrorHandler error_handler)
     
     if (NULL == visual)
     {
-        error(0, 0, "No visual\n");
-        
+        perror("No visual\n");
+
         return -1;
     }
 
@@ -859,7 +862,8 @@ int viewerDrawLine3D(const EPoint *p1, const EPoint *p2)
                         x2[0], x2[1]);
     if (0 > err)
     {
-        error(0, err, "Draw failed\n");
+        perror( "Draw failed\n");
+
         LOG1("Draw failed\n");
         return -1;
     }
@@ -905,8 +909,14 @@ int viewerDrawRectangle(int x, int y, int width, int height)
                CoordModeOrigin);
 }
 
-int viewerFillRectanlge(int x, int y, int width, int height, unsigned long color)
+void viewerClearRectangle(int x, int y, int width, int height)
 {
+    XClearArea(_viewerDisplay, _viewerMainWindow, x , _viewerState.height - y, width, height, False);    
+}
+
+int viewerFillRectanlge(int x, int y, int width, int height, color_type color)
+{
+    
     viewerSetDrawingColor(color);
 
     return XFillRectangle(_viewerDisplay, _viewerMainWindow, _viewerGC, x, y, width,height);
@@ -971,6 +981,8 @@ int viewerStringSize(const char *string, int length, int* width, int* height, in
     
 int viewerDrawText(int x, int y, const char* text)
 {
+    int text_y = 0;
+    
     if (text && viewer_font)
     {
         int label_len = strlen(text);
@@ -1013,19 +1025,23 @@ int viewerDrawText(int x, int y, const char* text)
         
         if (*text)
         {
+            text_y = _viewerState.height - y;
+            
             int err = XDrawString(_viewerDisplay, _viewerMainWindow, _viewerGC,
                         x, _viewerState.height - y, text, label_len);
 
             if (0 > err)
             {
                 viewerPrintError(0, "Draw text failed\n");
-                error(0, err, "Draw text failed\n");            
+
+                perror("Draw text failed\n");
+
                 return -1;
             }
         }
     }
     
-    return 0;    
+    return text_y;    
 }
 
 int viewerDrawText3D(EPoint *p, const char* text, size_t length)
@@ -1040,8 +1056,7 @@ int viewerDrawText3D(EPoint *p, const char* text, size_t length)
     if (0 > err)
     {
         viewerPrintError(0,  "Draw text failed\n");
-        error(0, err, "Draw text failed\n");
-        
+        perror("Draw text failed\n");
         return -1;
     }
     
@@ -1121,3 +1136,11 @@ int viewerSetLineWidth(int line_width)
     return XSetLineAttributes(_viewerDisplay, _viewerGC,LINE_ATTRIBUTES);    
 }
 
+
+void viewerFlush()
+{
+    if (_viewerDisplay)
+    {
+        XFlush(_viewerDisplay);
+    }
+}

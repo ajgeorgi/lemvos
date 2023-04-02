@@ -14,7 +14,7 @@
 
 #define GV_APPL_CLASS "Georgi-Bootbau"
 #define GV_APPLICATION "GV"
-#define GV_VERSION "0.1.1"
+#define GV_VERSION "0.1.3"
 
 typedef int (*PaintMethod)(void* data);
 
@@ -58,8 +58,11 @@ int viewerStringSize(const char *string,
                      int *baseline);
 
 int viewerFillRectanlge(int x, int y, int width, int height, color_type color);
+void viewerClearRectangle(int x, int y, int width, int height);
 
 void viewerInvalidate();
+
+void viewerFlush();
 
 void viewerDrawDot(const EPoint *x);
 

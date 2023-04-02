@@ -2,11 +2,12 @@
 #include <X11/Xlib.h>
 #include <X11/Xaw/Label.h>
 #include <stdio.h>
-#include <error.h>
 #include <X11/StringDefs.h>
 
 #include <time.h>
-#include <errno.h>
+
+#include <stdio.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -18,6 +19,8 @@
 
   Copyright: Andrej Georgi -> axgeorgi@gmail.com
 */
+
+#define __GOBJECT_PRIVATE
 
 #include "controller.h"
 #include "viewer.h"
@@ -40,6 +43,8 @@
 #include "modelcreator.h"
 
 #include "sequencer.h"
+
+#include "progress.h"
 
 #define BUTTON_WIDTH 120
 #define BUTTON_HEIGHT 20
@@ -291,7 +296,8 @@ void plotterHandleError(int code, const char *text)
                 &character_height, 
                 &font_baseline);
 
-        plotterDrawText(VIEWER_TEXT_STICK_RIGHT, height - font_baseline - _plotter_error_text_y, text,  aperalGetColor(GAPERAL_ERROR));
+        plotterDrawText(VIEWER_TEXT_STICK_RIGHT, VIEWER_TEXT_STICK_TOP,  text,  aperalGetColor(GAPERAL_ERROR));
+                        // height - font_baseline - _plotter_error_text_y,
         
         _plotter_error_text_y += character_height;
         
@@ -399,6 +405,8 @@ void plotterClearTexts()
     _plotter_text_last = NULL;
 }
 
+// If text = NULL text will be removed at position
+// If position already exists text will be updated
 int plotterDrawText(int x, int y, const char* text, unsigned long color)
 {
     PlotterText *prev = NULL;
@@ -406,7 +414,7 @@ int plotterDrawText(int x, int y, const char* text, unsigned long color)
     {
         if ((found->x == x) && (found->y == y))
         {
-            if ((found->text != text) && (0 != strcmp(text,found->text)))
+            if ((found->text != text) && ((NULL == text) || (0 != strcmp(text,found->text))))
             {
                 memory_free(found->text); 
                 if ((NULL == text) || (0 == *text))
@@ -433,43 +441,49 @@ int plotterDrawText(int x, int y, const char* text, unsigned long color)
                 }
                 
             }
+            
             _plotterDrawTexts();
             return 0;
         }
         prev = found;
     }
 
-    // Create new text
-    PlotterText *ptext = (PlotterText*)memory_aloc(sizeof(PlotterText));
-    memset(ptext,0,sizeof(PlotterText));
-    
-    ptext->x = x;
-    ptext->y = y;
-    
-    viewerStringSize(text, 
-                     strlen(text), 
-                     &ptext->width, 
-                     &ptext->height, 
-                     NULL, 
-                     NULL, 
-                     NULL);
+    if (text)
+    {
+        // Create new text
+        PlotterText *ptext = (PlotterText*)memory_aloc(sizeof(PlotterText));
+        memset(ptext,0,sizeof(PlotterText));
+        
+        ptext->x = x;
+        ptext->y = y;
+        
+        viewerStringSize(text, 
+                        strlen(text), 
+                        &ptext->width, 
+                        &ptext->height, 
+                        NULL, 
+                        NULL, 
+                        NULL);
 
-    
-    ptext->text = memory_strdup(text);
-    ptext->color = color;
-    
-    if (NULL == _plotter_text_last)
-    {
-        _plotter_text_first = ptext;
-        _plotter_text_last = ptext;
+        
+        ptext->text = memory_strdup(text);
+        ptext->color = color;
+        
+        if (NULL == _plotter_text_last)
+        {
+            _plotter_text_first = ptext;
+            _plotter_text_last = ptext;
+        }
+        else
+        {
+            PlotterText *prev = _plotter_text_last;
+            _plotter_text_last = ptext;
+            prev->next = ptext;
+        }
+        
+        _plotterDrawTexts();
     }
-    else
-    {
-        PlotterText *prev = _plotter_text_last;
-        _plotter_text_last = ptext;
-        prev->next = ptext;
-    }
-    _plotterDrawTexts();
+    
     
     return 0;
 }
@@ -483,19 +497,21 @@ int plotterLoadModelFromFile(const char* filename)
         
         if (filename)
         {            
-            err = loaderLoadModel(&model, filename);            
+            // err = loaderLoadModelProgress(&model, filename, progressSetProgress, 200);     
+            err = loaderLoadModel(&model, filename);     
+            // progressClose();
         }
         
         if ((NULL == model) || (err < 0))
         {
-            commenPrintError(errno,"Failed to load model from \"%s\".\n",filename?filename:UNKNOWN_SYMBOL);
+            commenPrintError(0,"Failed to load model from \"%s\".\n",filename?filename:UNKNOWN_SYMBOL);
         }
         else
         {
             err = plotterAddModel(model, filename);
             if (0 != err)
             {
-                commenPrintError(errno,"Failed to add model:\n\"%s\"!",filename?filename:UNKNOWN_SYMBOL);
+                commenPrintError(0,"Failed to add model:\n\"%s\"!",filename?filename:UNKNOWN_SYMBOL);
             } 
             else
             {
@@ -507,7 +523,7 @@ int plotterLoadModelFromFile(const char* filename)
         return err;
     }
     
-    commenPrintError(errno,"Model \"%s\" already loaded.\n",_plotterModel->name);
+    commenPrintError(0,"Model \"%s\" already loaded.\n",_plotterModel->name);
     
     return -1;
 }
@@ -565,39 +581,14 @@ int _plotterCreateSolidButtons(Model *model)
             
             widget->flags |= VIEWERWIDGET_FLAG_TEMPORARY;
             
-            Solid *solid = (Solid*)isCObject(OBJ_SOLID,object);
-            if (solid)
+            object->methods.objectEdit = solidEdit;
+            if (object->material)
             {
-                if (solid->material)
-                {
-                    widget->frame_color = solid->material->color;
-                }
-                else
-                {
-                    widget->frame_color = aperalGetColor(GAPERAL_MODEL);
-                }
-                object->methods.objectEdit = solidEdit;
+                widget->frame_color = object->material->color;
             }
             else
             {
-                Mesh *mesh = (Mesh*)isCObject(OBJ_MESH,object);
-                if (mesh)
-                {
-                    if (mesh->material)
-                    {
-                        widget->frame_color = mesh->material->color;
-                    }
-                    else
-                    {
-                        widget->frame_color = aperalGetColor(GAPERAL_MESH);
-                    }
-                    
-                    object->methods.objectEdit = solidEdit;
-                }
-                else
-                {
-                    ERROR("Unknown object \"%s\" can not be edited\n",object->name);
-                }
+                widget->frame_color = aperalGetColor(GAPERAL_MESH);
             }
                 
             widgetVisible(widget);
@@ -732,7 +723,7 @@ void plotterLoadFile()
     char path[128];
     getcwd(path, sizeof(path));
     
-    fileChoice("Pick model:", path, "model", plotterLoadChoice);
+    fileChoice("Pick model:", path, "model;stl", plotterLoadChoice);
 }
 
 CObject* plotterUpdateWettetArea(const char *name, CObject *object, unsigned long color)
@@ -752,10 +743,12 @@ CObject* plotterUpdateWettetArea(const char *name, CObject *object, unsigned lon
                 if (solid)
                 {
                     if (solid->wettet && (water != solid))
-                    {                                    
+                    {       
+                        char s1[GM_VERTEX_BUFFER_SIZE];                        
+                        LOG("Updating [%s]\n",vertexPath((GObject*)solid,s1,sizeof(s1)));
+                        
                         if (NULL == gmathIntersect(solid, 0,water->normal.normal, water->normal.p, solid->wettet))
                         {
-                            char s1[GM_VERTEX_BUFFER_SIZE];
                             ERROR("Water dip failed for [%s].\n",vertexPath((GObject*)solid,s1,sizeof(s1)));
                         } 
                     }
@@ -885,13 +878,17 @@ int plotterButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
     {
         char text[300];
         text[0] = 0;
-        for (CObject *object = isCObject(ANY_COBJECT,_plotterModel->first); object; object = isCObject(ANY_COBJECT,object->next))
+
+        if (_plotterModel)
         {
-            if ((GM_GOBJECT_FLAG_MODIFIED|GM_GOBJECT_FLAG_LOADED) == (object->flags & (GM_GOBJECT_FLAG_MODIFIED|GM_GOBJECT_FLAG_LOADED)))
+            for (CObject *object = isCObject(ANY_COBJECT,_plotterModel->first); object; object = isCObject(ANY_COBJECT,object->next))
             {
-                char changed[100];
-                snprintf(changed,sizeof(changed),"\"%s\" has been changed!\n",object->name);
-                commenStringCat(text,changed,sizeof(text));
+                if ((GM_GOBJECT_FLAG_MODIFIED|GM_GOBJECT_FLAG_LOADED) == (object->flags & (GM_GOBJECT_FLAG_MODIFIED|GM_GOBJECT_FLAG_LOADED)))
+                {
+                    char changed[100];
+                    snprintf(changed,sizeof(changed),"\"%s\" has been changed!\n",object->name);
+                    commenStringCat(text,changed,sizeof(text));
+                }
             }
         }
         
@@ -951,6 +948,12 @@ int plotterButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
                 int marked2_count = vertexCountVertices(object, GM_GOBJECT_VERTEX_FLAG_MARK2);
                 int error_count = vertexCountVertices(object, GM_GOBJECT_VERTEX_FLAG_MARK_ERROR);
 
+                long object_size = 0;
+                if (object->methods.objectSize)
+                {
+                    object_size = object->methods.objectSize(object);
+                }
+                
                 char solidText[250];
                 solidText[0] = 0;
                 Solid *solid = (Solid*)isCObject(OBJ_SOLID,object);
@@ -960,10 +963,11 @@ int plotterButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
                     const int poly_count = vertexCountPolygones(object, 0);
                     const int orig_poly_count = vertexCountPolygones(object, GM_GOBJECT_FLAG_POLY_ORIGINAL);
 
-                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", Polygones = %i/%i |%i|, m=%i, m2=%i, e=%i\n",
-                             vertexPath((GObject*)solid,s1,sizeof(s1)),solid->name?solid->name:UNKNOWN_SYMBOL,
+                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", Polygones=%i/%i, Vert.=%li, |%i|, m=%i, m2=%i, e=%i\n",
+                             vertexPath((GObject*)solid,s1,sizeof(s1)),solid->name,
                              poly_count,
                              orig_poly_count,
+                             object_size,
                              measurements,
                              marked_count,
                              marked2_count,
@@ -973,10 +977,9 @@ int plotterButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
                 else
                 if (mesh)
                 {
-                    const long msize = meshSize(mesh);
-                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", Vert. = %li |%i|, m=%i, m2=%i, e=%i\n",
-                             vertexPath((GObject*)mesh,s1,sizeof(s1)),mesh->name?mesh->name:UNKNOWN_SYMBOL,
-                             msize,
+                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", Vert.=%li |%i|, m=%i, m2=%i, e=%i\n",
+                             vertexPath((GObject*)mesh,s1,sizeof(s1)),mesh->name,
+                             object_size,
                              measurements,
                              marked_count,
                              marked2_count,
@@ -985,8 +988,9 @@ int plotterButtonCallback(ViewerWidget *w, int ev, int x, int y, void *data)
                 }
                 else
                 {
-                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", |%i|, m=%i, m2=%i, e=%i\n",
-                             vertexPath((GObject*)object,s1,sizeof(s1)),object->name?object->name:UNKNOWN_SYMBOL,
+                    snprintf(solidText,sizeof(solidText),"%s:\"%s\", Vert.=%li, |%i|, m=%i, m2=%i, e=%i\n",
+                             vertexPath((GObject*)object,s1,sizeof(s1)),object->name,
+                             object_size,
                              measurements,
                              marked_count,
                              marked2_count,
@@ -1066,7 +1070,7 @@ int plotterAddModel(Model *model, const char* filename)
     {
         if (NULL == isCObject(OBJ_MODEL,model))
         {
-            viewerPrintError(errno,"No model. Nothing to plot!\n");
+            viewerPrintError(0,"No model. Nothing to plot!\n");
             viewerClear();
             return -1;
         }
@@ -1074,7 +1078,8 @@ int plotterAddModel(Model *model, const char* filename)
         {
             char timeModified[100];
             char title[256];        
-            
+            char configFileNameBuffer[256];
+
             _plotterModel = model;
             
 #ifdef _DEBUG_DISABLE_SEQUENCE            
@@ -1093,16 +1098,18 @@ int plotterAddModel(Model *model, const char* filename)
             
             if (filename)
             {
-                char configFileNameBuffer[256];
                 if (filename != _plotter_model_filename)
                 {
                     _plotter_model_filename[0] = 0;
                     if ('/' != *filename)
                     {
+                        // expand relative file name to absolute path
                         getcwd(_plotter_model_filename,sizeof(_plotter_model_filename));
                         commenStringCat(_plotter_model_filename,"/",sizeof(_plotter_model_filename));
                     }
                     commenStringCat(_plotter_model_filename,filename,sizeof(_plotter_model_filename));
+
+                    filename = _plotter_model_filename;
                 }
                 
                 snprintf(title,sizeof(title),"\"%s\" from \"%s\" (%u) last modified: %s",
@@ -1110,10 +1117,6 @@ int plotterAddModel(Model *model, const char* filename)
                          _plotter_model_filename,
                          modelstoreGetVertexCount(),
                          timeModified);
-                
-                // Get model configuration too
-                const char*configFileName =  loaderGetConfigNameFromModel(filename, configFileNameBuffer, sizeof(configFileNameBuffer));
-                loaderLoadConfig(configFileName);                
             }
             else
             {
@@ -1121,13 +1124,33 @@ int plotterAddModel(Model *model, const char* filename)
                          commenNameFromModel(_plotterModel->name),
                          modelstoreGetVertexCount(),
                          timeModified);                
+                filename = configFileNameBuffer;
+
+                const char *model_name = commenNameFromModel(_plotterModel->name);
+                if (model_name)
+                {
+                    strncpy(configFileNameBuffer,model_name,sizeof(configFileNameBuffer));
+                }
             }
             
+            // Get model configuration too
+            const char*configFileName =  loaderGetConfigNameFromModel(filename, configFileNameBuffer, sizeof(configFileNameBuffer));
+            if (!isFileExists(configFileName) && ('/' != configFileName[0]))
+            {
+                commenPrefixString("../models/",configFileNameBuffer,sizeof(configFileNameBuffer));
+            }
+            loaderLoadConfig(configFileName);
+
             viewerSetTitle(title,_plotterModel->name);
 
+            // Try to initialize model by its type
             if (0 != modelcreatorInitModel(_plotterModel))
             {
-                ERROR("Error: Initialization of model \"%s\" failed.\n",_plotterModel->name?_plotterModel->name:UNKNOWN_SYMBOL);
+                // Is there a type name included in the model name?
+                if (commenNameFromModel(_plotterModel->name) != _plotterModel->name)
+                {
+                    ERROR("Error: Initialization of model \"%s\" failed.\n",_plotterModel->name);
+                }
             }
             
             // Initial face
@@ -1137,6 +1160,8 @@ int plotterAddModel(Model *model, const char* filename)
             double length = 800;
             // ???
             vertexGetCObjectSize((CObject*)_plotterModel, &width, &length, NULL);
+//            int wwidth = width*2.6;
+//            int wlength = length*1.8;
             
             Solid *water = shapeCreateFace(_plotterModel,GV_WATER_SOLID_NAME, n, p, width*2.6, length*1.8);
             if (water)
@@ -1165,39 +1190,58 @@ int plotterAddModel(Model *model, const char* filename)
             {
                 char wettetName[100];
                 char s1[GM_VERTEX_BUFFER_SIZE];
-                Solid *solid = vertexSolidIterator(_plotterModel,NULL,GM_GOBJECT_FLAG_LOADED);
-                while (solid)
+                for (GObject *object = isObject(model->first); object; object= isObject(object->next))
                 {   
-                    char *wname = strchr(vertexPath((GObject*)solid,s1,sizeof(s1)),'.');
-                    
-                    if (wname)
-                    {
-                        wname++;
-                    }
-                    else
-                    {
-                        wname = s1;
-                    }
-                    
-                    snprintf(wettetName,sizeof(wettetName),"%s.%s",GV_VOLUME_MESH_NAME,
-                             wname);
-                    
-                    if (NULL == solid->wettet)
-                    {
-                        solid->wettet = modelstoreCreateMesh(_plotterModel, wettetName);
-
-                        if (solid->wettet && (NULL == solid->wettet->material))
-                        {
-                            vertexReplaceMaterial((CObject*)solid->wettet,modelstoreGetMaterial(GM_MATERIAL_WATER_NAME));
-                        }
-                    }
-                     
                     // Closing the box here. No more expansion of the BB only rotation from now on.
                     // For new expansion of the BB you need to clear the box
-                    vertexMakeBBNormal(&solid->box);
-                    vertexMakeBBNormal(&solid->original_box);
-                      
-                    solid = vertexSolidIterator(_plotterModel,solid,GM_GOBJECT_FLAG_LOADED);
+                    CObject *cobject = (CObject *)isCObject(ANY_COBJECT,object);
+                    if (cobject)
+                    {
+                        if (vertexMakeBBNormal(&cobject->box))
+                        {
+                            ERROR("Failed to close BB on \"%s\"\n",cobject->name);
+                        }
+                        else
+                        {
+                            char s1[GM_VERTEX_BUFFER_SIZE];
+                            LOG("Bounding box at \"%s\" [%s] created.\n",cobject->name,vertexPath((GObject*)cobject,s1,sizeof(s1)));
+                        }
+                    }
+                    
+                    if (GM_GOBJECT_FLAG_LOADED & object->flags)
+                    {
+                        DObject *dobject = (DObject *)isDObject(ANY_DOBJECT,object);
+                        if (dobject)
+                        {                        
+                            char *wname = strchr(vertexPath((GObject*)dobject,s1,sizeof(s1)),'.');
+                            
+                            if (wname)
+                            {
+                                wname++;
+                            }
+                            else
+                            {
+                                wname = s1;
+                            }
+                            
+                            snprintf(wettetName,sizeof(wettetName),"%s.%s",GV_VOLUME_MESH_NAME,
+                                    wname);
+                        
+                            if (NULL == dobject->wettet)
+                            {
+                                dobject->wettet = modelstoreCreateMesh(_plotterModel, wettetName, 500);
+
+                                if (dobject->wettet && (NULL == dobject->wettet->material))
+                                {
+                                    vertexReplaceMaterial((CObject*)dobject->wettet,modelstoreGetMaterial(GM_MATERIAL_WATER_NAME));
+                                }
+                            }
+                            
+                            dobject->original_box = dobject->box;
+                            dobject->original_box.flags |= GO_BB_ORIGINAL_DATA;
+                        }
+                    }
+                        
                 }
             }
 
@@ -1222,7 +1266,7 @@ int plotterAddModel(Model *model, const char* filename)
         return 0;
     }
     
-    viewerPrintError(errno,"Model \"%s\" exists already.\n",commenNameFromModel(_plotterModel->name));
+    viewerPrintError(0,"Model \"%s\" exists already.\n",commenNameFromModel(_plotterModel->name));
     return -1;
 }
 
@@ -1402,10 +1446,27 @@ int _plotterPlot(Model *model)
             
             if (object->flags & GM_GOBJECT_FLAG_SHOW_BBOX)
             {
+#ifdef _DEBUG_BBOX                    
+                char s1[GM_VERTEX_BUFFER_SIZE];
+#endif                
                 if (_plotterViewerDriver.drawBoundingBox)
                 {
+#ifdef _DEBUG_BBOX                    
+                    double width = 0;
+                    double length = 0;
+                    double height = 0;
+                    vertexGetCObjectSize(object, &width, &length, &height);    
+                    
+                    LOG("Drawing BB for [%s] = (%.3f,%.3f,%.3f)\n",vertexPath((GObject*)object,s1,sizeof(s1)),width,length,height);
+#endif                    
                     _plotterViewerDriver.drawBoundingBox(&object->box);
                 }
+#ifdef _DEBUG_BBOX                                    
+                else
+                {
+                    ERROR("No BB drawing method for [%s]\n",vertexPath((GObject*)object,s1,sizeof(s1)));
+                }
+#endif                
             }            
             
             // Go for the measurements
@@ -1498,6 +1559,8 @@ int _plotterDrawTexts()
     }
     
     viewerSetDrawingColor(color);
+    
+    viewerFlush();
     
     return 0;
 }

@@ -19,8 +19,8 @@ typedef struct ProgressBarT {
 
 ProgressBar * progressCreate(ViewerWidget *parent);
 
-void progressSet(const char *name, int max, int pos);
-void progressSetProgress(int pos);
+int progressSetProgress(int max, int pos);
+void progressClose();
 
 
 #endif // __PROGRESS__

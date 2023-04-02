@@ -91,7 +91,11 @@ int init(int argc, char **argv)
     LOG("Locale: thousands_sep=\"%s\", grouping=\"%s\"\n",locale->thousands_sep,locale->grouping);
     // locale->thousands_sep = ",";
     // locale->grouping = "30";
-    
+
+    Config *lemvosPath = configCreate(LEMVOS_PATH, MeaUnit_None);
+    lemvosPath->string = memory_strdup(argv[0]);
+    configStoreConfig(lemvosPath);
+
     return 0;
 }
 
@@ -124,7 +128,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        err = plotterAddModel(modelcreatorCreate(LEMVOS_MODEL_NAME),NULL);
+        err = plotterAddModel(modelcreatorCreate("CUBE"),NULL);
     }
     
     if (0 <= err)

@@ -5,14 +5,13 @@ build: gv test
 
 obj = ../commen/commen.o widget.o soliddialog.o popup.o main.o viewer.o controller.o menu.o \
       projection.o aperal.o tabsheet.o input.o oceandialog.o meshdialog.o table.o combobox.o \
-      modeldia.o
+      modeldia.o progress.o
 
-CC = gcc
-CFLAGS += $(DEFS) $(WARN) $(COMPILE) $(OPT) -I../gm -I../gmc -I../gp -I../commen
+CFLAGS += $(DEFS) $(WARN) $(COMPILE) $(OPT) $(INCLUDE) -I../gm -I../gmc -I../gp
 LIBS = -L../../lib $(LSTATIC) -lGMC -lGM -lGP -lhpdfs -L/lib64/ $(LSTATIC) -lz -L/usr/lib64/ $(LSTATIC) -lpng16 
 
 gv: $(obj) 
-	gcc $(obj) $(LFLAGS) -o ../../bin/gv -lm $(LSTATIC) -lX11  $(LIBS) 
+	$(CC) $(obj) $(LFLAGS) -o ../../bin/gv -lm $(X11LIBSDIR) -lX11  $(LIBS)
 
 test: gv
 	export MALLOC_TRACE=$(MALLOC_TRACE); cd ../../$(TESTDIR); ../bin/gv -l $(TESTFILE)

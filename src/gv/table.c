@@ -382,7 +382,11 @@ int tableAddTextToCell(TableWidget *table, int column, int row, const char* cont
         }
     }
     
-    ERROR("Can not add content to (%i,%i) of \"%s\"\n",column,row,table->widget->name);
+    char s1[GM_VERTEX_BUFFER_SIZE];
+    
+    ERROR("Can not add content \"%s\" at (%i,%i) of [%s]\n",
+          content?content:UNKNOWN_SYMBOL,column,row,
+          vertexPath((GObject*)table,s1,sizeof(s1)));
 
     return -1;    
 }

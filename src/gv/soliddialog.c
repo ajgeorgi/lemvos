@@ -338,6 +338,12 @@ int solidDialogCallback(ViewerWidget *w, int ev, int x, int y, void *data)
         if (WIDGETCHECKMARK(BBButton))
         {
             _soliddialog_solid->flags |= GM_GOBJECT_FLAG_SHOW_BBOX;
+            
+            if (0 == (GO_BB_CALCULATED & _soliddialog_solid->box.flags))
+            {
+                char s1[GM_VERTEX_BUFFER_SIZE];                
+                ERROR("Can not show box for [%s] because its not closed.\n",vertexPath((GObject*)_soliddialog_solid,s1,sizeof(s1)));
+            }
         }
         else
         {
@@ -621,8 +627,14 @@ int objetcEditFillDebugTable(const CObject *object, TableWidget *table)
     row++;
     tableAddTextToCell(table, 0, row, "flags"); tableAddTextToCell(table, 1, row, vertexFlagsToString((GObject*)object,s1,sizeof(s1)));
     row++;
-    
-    tableAddTextToCell(table, 0, row, "BB->center"); tableAddTextToCell(table, 1, row, EPoint3ToString(object->box.center,s1,sizeof(s1)));
+
+    double width = 0;
+    double length = 0;
+    double height = 0;
+    vertexGetCObjectSize(object, &width, &length, &height);    
+    char text[200];
+    snprintf(text,sizeof(text),"%s, %.3f,%.3f,%.3f",EPoint3ToString(object->box.center,s1,sizeof(s1)),width,length,height);
+    tableAddTextToCell(table, 0, row, "BB->center"); tableAddTextToCell(table, 1, row, text);
     row++;
     Model *model = (Model*)isCObject(OBJ_MODEL,object->parent);
     snprintf(s1,sizeof(s1),"Model:%lX, Object:%lX",model?model->rep_type:0,object->rep_type);
@@ -674,6 +686,9 @@ int solidEdit(CObject *object, DialogUserChoice callback)
 {
     if (isCObject(ANY_COBJECT,object))
     {
+        char s1[GM_VERTEX_BUFFER_SIZE];
+        LOG("Object editor started for [%s] \"%s\"\n",vertexPath((GObject*)object,s1,sizeof(s1)),object->name);
+        
         char vertexBuff[50];
                         
         if (_soliddialog_solid != object)
@@ -693,7 +708,6 @@ int solidEdit(CObject *object, DialogUserChoice callback)
         widgetSetText(dialog,solidName);    
         widgetSetText(modelTab->button,widgetTextClip(modelTab->button,solidName,buttonName,sizeof(buttonName)));
         
-        char s1[GM_VERTEX_BUFFER_SIZE];
         Model *model = (Model*)isCObject(OBJ_MODEL,object->parent);
         int poly_count = vertexCountPolygones(object, 0);
         snprintf(modelText,sizeof(modelText),"[%s]: \"%s\" from \"%s\" with %i polygones at %s",
@@ -711,11 +725,17 @@ int solidEdit(CObject *object, DialogUserChoice callback)
         
         double heave = object->box.p[1];
         inputSetNumber(inputHeave, heave);
-        
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-source-encoding"
+#endif
         inputSetLabel(inputYaw,"yaw [°]");
         inputSetLabel(inputRoll,"roll [°]");
         inputSetLabel(inputPitch,"pitch [°]");
         inputSetLabel(inputHeave,"heave [px]");
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
 
         solideditSetMaterial(object->material);
         
@@ -741,7 +761,7 @@ int solidEdit(CObject *object, DialogUserChoice callback)
         commentText[0] = 0;
         if (object->comments)
         {
-            char text[120];
+            char text[150];
             strncpy(commentText,commenStripString(object->comments),sizeof(commentText));
 
             double width = 0;
@@ -750,7 +770,7 @@ int solidEdit(CObject *object, DialogUserChoice callback)
             
             if (0 == vertexGetCObjectSize(object, &width, &length, &height))
             {
-                snprintf(text,sizeof(text),"Solid width:%.3f, length: %.3f, height:%.3f",width,length,height);
+                snprintf(text,sizeof(text),"\nDimensions: width=%.3f, length=%.3f, height=%.3f",width,length,height);
                 commenStringCat(commentText,text,sizeof(commentText));
             }
         }
