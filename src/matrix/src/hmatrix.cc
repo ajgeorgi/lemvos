@@ -526,13 +526,13 @@ void Vector::RemoveData()
   if (theData)
     {
       if (theData->theRefCount <= 1)
-	{
-	  if (theOwnData)
-	    delete theData->theData;
-	  delete theData;	  
-	}
+	  {
+        if (theOwnData)
+          delete[] theData->theData;
+        delete theData;
+      }
       else
-	theData->theRefCount--;
+        theData->theRefCount--;
 
       theData = NULL;
     }

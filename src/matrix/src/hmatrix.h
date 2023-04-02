@@ -196,7 +196,7 @@ class Vector
 
 class Matrix 
 {
-  friend Vector;
+  friend class Vector;
 
   // Internal used data for a matrix
   struct _MatrixData {
@@ -208,11 +208,11 @@ class Matrix
 	theData(new double*[n]),
 	isDiag(false),
 	isZero(true)
-      { for ( unsigned j=0;j<n;j++)
-	{ theData[j] = new double[m];
-	  memset(theData[j],0,sizeof(double)*m);
-	} 
-      };
+    { for ( unsigned j=0;j<n;j++)
+      { theData[j] = new double[m];
+        memset(theData[j],0,sizeof(double)*m);
+      }
+    };
 
     _MatrixData(unsigned m)
       : theRefCount(1),
@@ -221,12 +221,11 @@ class Matrix
 	theData(new double*[1]),
 	isDiag(true),
 	isZero(true)
-      { 
-	theData[0] = new double[m+1];
-	memset(theData[0],0,sizeof(double)*(m+1));
-      };
+    {
+        theData[0] = new double[m+1];
+        memset(theData[0],0,sizeof(double)*(m+1));
+    };
 
-    
     ~_MatrixData() { 
       if (isDiag)
 	delete theData[0];
@@ -234,7 +233,7 @@ class Matrix
 	for ( unsigned j=0;j<dim2;j++)
 	  if (theData[j])
 	    delete theData[j]; 
-      delete theData; };
+      delete[] theData; };
 	    
 	    unsigned theRefCount;
 	    unsigned dim1;
