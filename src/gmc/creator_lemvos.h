@@ -15,6 +15,7 @@
 #define LEMVOS_FLAG_STERN  GM_FLAG_USER6
 
 #define LEMVOS_MODEL_NAME "lemvos"
+#define LEMVOS_HULL_SOLID_NAME "Hull"
 
 int initLemvos(CObject *object);
 

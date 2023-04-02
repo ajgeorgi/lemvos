@@ -28,7 +28,7 @@ Model *createCubeModel()
   strncpy(_material->spec,"St37",sizeof(_material->spec));
 
 
-  vertexReplaceMaterial((CObject*)_theSolid,_material);  
+  vertexReplaceMaterial((CObject*)_theSolid, _material);
   
     // Origin
     x[0] = 100.0;

@@ -37,7 +37,7 @@ int gmathInit()
 
     _number_of_vertices = 0;
     
-    return 0;
+    return err;
 }
 
 int gmathAddVertex(Vertex *v)
@@ -726,7 +726,7 @@ int gmathTriangFinalize(CObject *object, flag_type mask)
     
     LOG_FLUSH;
     
-#ifdef _DEBUG_MEM    
+#ifdef _DEBUG_MEMORY
     memory_check();
 #endif    
         
@@ -919,10 +919,8 @@ int _gmathAddCrossingVertexToMesh(Mesh *mesh, const Vertex *out, Vertex *in, con
             if (NULL == inside)
             {
                 // Need new inside vertex for new connections
-                inside = createVertex((GObject*)mesh, in->x);
+                inside = meshAddPoint(mesh,in->x);
                 inside->flags = (in->flags & ~GM_GOBJECT_VERTEX_FLAG_NORMAL_VALID);
-                
-                err = meshAddVertex(mesh,inside);
                 
                 AreaAttributes *attrib = in->first_attrib;
                 while(attrib)
@@ -957,8 +955,8 @@ int _gmathAddCrossingVertexToMesh(Mesh *mesh, const Vertex *out, Vertex *in, con
             if (0 == vertexLinePlaneIntersection(pinch, p, normal, in->x, line))
             {            
                 // New pinch points for the connections
-                Vertex *pinch_vertex = createVertex((GObject*)mesh, pinch);
-                if (0 == meshAddVertex(mesh,pinch_vertex))
+                Vertex *pinch_vertex = meshAddPoint(mesh, pinch);
+                if (pinch_vertex)
                 {                
                     err = vertexAddConnection(inside,pinch_vertex);
                 }
@@ -983,7 +981,7 @@ int _gmathAddCrossingVertexToMesh(Mesh *mesh, const Vertex *out, Vertex *in, con
      {
         // No new inside needed because all connections are remaining inside
          
-        meshAddVertex(mesh,in);
+        Vertex *nin = meshAddPoint(mesh,in->x);
         
         if (out) // In case we got an out vertex we pinch the surface
         {
@@ -992,14 +990,14 @@ int _gmathAddCrossingVertexToMesh(Mesh *mesh, const Vertex *out, Vertex *in, con
             
             if (0 == vertexLinePlaneIntersection(pinch, p, normal, in->x, line))
             {
-                Vertex *vpinch = createVertex((GObject*)mesh, pinch);
-                if (meshAddVertex(mesh,vpinch))
+                Vertex *vpinch = meshAddPoint(mesh, pinch);
+                if (vpinch)
                 {
-                    err = -1;
+                    vertexAddConnection(vpinch,nin);
                 }
                 else
                 {
-                    vertexAddConnection(vpinch,in);
+                    err = -1;
                 }
             }
             else
@@ -1159,11 +1157,6 @@ Mesh *gmathIntersect(Solid *solid, flag_type mask, const EPoint* normal, const E
         mesh->flags |= GM_GOBJECT_FLAG_TRIANGULATED;       
  
         gmathTriangFinalize((CObject*)mesh, mask);
-
-#ifdef _DEBUG_INTERS      
-        LOG("%li vertieces added to volume Vol%i \"%s\" from \"%s\",\n%i unconnected and %i without attributes, %i new vertices\n",
-            meshSize(mesh),mesh->index,mesh->name,solid->name,fail_count,no_attrib_count,meshv_count);        
-#endif        
                 
         return mesh;
     }
@@ -1522,15 +1515,26 @@ int gmathRemoveAttributes(CObject *object)
                 // LOG("Removing from [%s]\n",vertexPath(obj,s1,sizeof(s1)));
                 
                 v->flags &= ~(GM_GOBJECT_VERTEX_FLAG_NORMAL_VALID|GM_GOBJECT_VERTEX_FLAG_SEEN);
+                char s1[GM_VERTEX_BUFFER_SIZE];
                 
                 for (AreaAttributes *attrib = v->first_attrib; isGObject(OBJ_ATTRIB,attrib) ;attrib = (AreaAttributes*)attrib->next)
-                {            
-                    attrib->flags = 0;
-                    attrib->v1 = NULL;
-                    attrib->v2 = NULL;
-                    attrib->v3 = NULL;
-                    attrib->v4 = NULL;
-                    attrib->refCount--;
+                {   
+                    if (1 < attrib->refCount)
+                    {
+                        ERROR("Clearing object [%s] with multiple references\n",vertexPath((GObject*)attrib,s1,sizeof(s1)));
+                    }
+                    
+                    if (isObject(attrib))
+                    {
+                        attrib->flags = 0;
+                        attrib->v1 = NULL;
+                        attrib->v2 = NULL;
+                        attrib->v3 = NULL;
+                    }
+                    else
+                    {
+                        FATAL("Invalid attribute at [%s]\n",vertexPath((GObject*)v,s1,sizeof(s1)));
+                    }
                 }
             }
         }

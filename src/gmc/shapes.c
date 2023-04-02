@@ -194,7 +194,7 @@ Solid *shapeCreateFace(Model *model, const char* name, const EPoint *normal, con
     EPoint e1[3];
     EPoint e2[3];
 
-    if ((0 < width) && (0 < length))
+    if ((0 < width) && (0 < length) && (1000000 > length) && (1000000 > width))
     {    
         if (0 == vertexSpawnSurface(normal,p,e1,e2))
         {

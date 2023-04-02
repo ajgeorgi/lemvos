@@ -265,7 +265,14 @@ Polygon *createElipticFrameAbsolut(Solid *solid, EPoint *at, double radiusX, dou
 
 Solid *createHullAbsolut(Model *model, int with_center)
 {
-    Solid *solid = modelstoreCreateSolid(model, "Hull(V:A.2)");
+    Solid *solid = modelstoreCreateSolid(model, LEMVOS_HULL_SOLID_NAME);
+
+    if (NULL == solid)
+    {
+        FATAL("Can not create solid \"%s\" for model \"%s\"\n",LEMVOS_HULL_SOLID_NAME, model?model->name:UNKNOWN_SYMBOL);
+
+        return NULL;
+    }
 
     Config *config_radiusX = configGetConfig("lemvos.radiusX");
     Config *config_width = configGetConfig("lemvos.width");
@@ -421,8 +428,8 @@ Solid *createHullAbsolut(Model *model, int with_center)
     double *length_of_polygon_last = NULL;
     for (int i = 0; i < number_of_frames; i++)
     {
-        const char *are_unit = "px²";
-        const char *len_unit = "px";
+        const char *are_unit = meaUnitToString(MeaUnit_SquarePixel);
+        const char *len_unit = meaUnitToString(MeaUnit_Pixel);
         double frame_area = areas[i];
 
         // Sum of polygon areas. Not the hull area
@@ -431,7 +438,7 @@ Solid *createHullAbsolut(Model *model, int with_center)
         if (1000000.0 < frame_area)
         {
             frame_area /= 1000000.0;
-            are_unit = "kpx²";
+            are_unit = meaUnitToString(MeaUnit_KiloSquarePixel);
         }
         
         double poly_length = length_of_polygon[i];
@@ -479,41 +486,41 @@ Solid *createHullAbsolut(Model *model, int with_center)
         }
     }
     
-    const char *are1_unit = "px²";
-    const char *are2_unit = "px²";
+    const char *are1_unit = meaUnitToString(MeaUnit_SquarePixel);
+    const char *are2_unit = meaUnitToString(MeaUnit_SquarePixel);
 //    const char *are3_unit = "px²";        
-    const char *beam_unit = "px";
-    const char *len_unit = "px";
-    const char *vol_unit = "px³";
+    const char *beam_unit = meaUnitToString(MeaUnit_Pixel);
+    const char *len_unit = meaUnitToString(MeaUnit_Pixel);
+    const char *vol_unit = meaUnitToString(MeaUnit_CubicPixel);
 
     if (1000000000.0 < aprox_volume)
     {
         aprox_volume /= 1000000000.0;
-        vol_unit = "kpx³";
+        vol_unit = meaUnitToString(MeaUnit_KiloCubicPixel);
     }
 
     if (1000000.0 < hullarea1)
     {
         hullarea1 /= 1000000.0;
-        are1_unit = "kpx²";
+        are1_unit = meaUnitToString(MeaUnit_KiloSquarePixel);
     }
 
     if (1000000.0 < polyarea2)
     {
         polyarea2 /= 1000000.0;
-        are2_unit = "kpx²";
+        are2_unit = meaUnitToString(MeaUnit_KiloSquarePixel);
     }
 
     if (1000.0 < lemvos_length)
     {
         lemvos_length /= 1000.0;
-        len_unit = "kpx";
+        len_unit = meaUnitToString(MeaUnit_KiloPixel);
     }
 
     if (1000.0 < lemvos_beam)
     {
         lemvos_beam /= 1000.0;
-        beam_unit = "kpx";
+        beam_unit = meaUnitToString(MeaUnit_KiloPixel);
     }
 
     /* double hullarea = gmathSolidArea(solid,(LEMVOS_FLAG|GM_GOBJECT_FLAG_POLY_ABSOLUT));
@@ -535,9 +542,9 @@ Solid *createHullAbsolut(Model *model, int with_center)
     
     commenStringCat(textBuffer,text,sizeof(textBuffer));
     
-    solidAddComment(solid,textBuffer,sizeof(textBuffer));
+    objectAddComment((CObject*)solid,textBuffer,sizeof(textBuffer));
         
-    fprintf(stderr,textBuffer);
+    fputs(textBuffer,stderr);
     
     return solid;
 }
@@ -559,8 +566,8 @@ int _lemvos_calc_bv(CObject *object)
     if (solid && (solid->flags & LEMVOS_FLAG))
     {
         char s1[GM_VERTEX_BUFFER_SIZE];     
-        LOG("triangulate: %s: \"%s\"\n",
-                    vertexPath((GObject*)solid,s1,sizeof(s1)),solid->name?solid->name:UNKNOWN_SYMBOL);
+        LOG("triangulate: %s: \"%s\"\n", vertexPath((GObject*)solid,s1,sizeof(s1)),
+            solid->name);
         
         vertexMakeBBNormal(&solid->box);
         gmathSolidArea(solid, LEMVOS_FLAG);
