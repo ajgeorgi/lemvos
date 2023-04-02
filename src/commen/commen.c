@@ -13,7 +13,7 @@
 #include <time.h>
 #undef __USE_XOPEN  
 
-#ifdef _DEBUG    
+#ifdef _DEBUG_MEMORY
 #include <mcheck.h>
 #endif
 
@@ -56,6 +56,7 @@ int _commenTerminate()
 static const char *_min_mem = NULL;
 static const char *_max_mem = NULL;
 
+#ifdef _DEBUG_MEMORY
 static void mcheckAbortfunc(enum mcheck_status mstatus)
 {
     static const char *mchech_str[] = {
@@ -75,11 +76,14 @@ static void mcheckAbortfunc(enum mcheck_status mstatus)
     
     _commenTerminate();
 }
+#endif
 
 int _check_memory(const void *obj)
 {
     if (obj)
     {
+#ifdef _DEBUG_MEMORY
+
         static const char *mchech_str[] = {
             "MCHECK_DISABLED",         /* = -1, Consistency checking is not turned on.  */
             "MCHECK_OK",                    /* Block is fine.  */
@@ -87,12 +91,29 @@ int _check_memory(const void *obj)
             "MCHECK_HEAD",                  /* Memory before the block was clobbered.  */
             "MCHECK_TAIL"            
         } ;             
-        
+#endif
+
         char *memory = ((char*)obj) -  sizeof(magic_number);
         magic_number *mem_num= (magic_number *)memory;
-        
+
+        if (_min_mem)
+        {
+            if (((const char*)obj > _max_mem) || ((const char*)obj < _min_mem))
+            {
+                FATAL("Corrupt mem at %p\n",obj);
+
+                if (__err_log)
+                {
+                    fflush(__err_log);
+                }
+
+                return 0;
+            }
+        }
+
         if (MEMORY_MAGIC == *mem_num)
-        {            
+        {
+#ifdef _DEBUG_MEMORY
             enum mcheck_status mstatus = mprobe((void*)memory);
             
             if (MCHECK_OK == mstatus)
@@ -100,46 +121,37 @@ int _check_memory(const void *obj)
                 return 1;
             }
 
-            FATAL("mprobe failed with %s\n",mchech_str[mstatus + 1]);
-            
             if (__err_log)
             {
                 fflush(__err_log);
             }
-            
+
+            FATAL("mprobe failed with %s\n",mchech_str[mstatus + 1]);
+
             return 0; //  Memory has been proven corrupt
+
+#else
+            // no memcheck possible so make it sane
+            return 1;
+#endif
+            
         }
         else
         {
-            if (_min_mem)
-            {
-                if (((const char*)obj > _max_mem) || ((const char*)obj < _min_mem))
-                {
-                    FATAL("Corrupt mem at %p\n",obj);
-                    
-                    if (__err_log)
-                    {
-                        fflush(__err_log);
-                    }
-                    
-                    return 0;
-                }
-            }            
-            
-            // Not my memory
+            // Not my memory. No checks possible here. Assume sane memory
             return 1;
         }
     }
     
-    return 1;
+    return 1; // No memory is sane
 }
 #endif
 
 void initCommen(const char* appName, CommonErrorHandler errHandler)
 {
     commen_error_handler = errHandler;
-#ifdef _DEBUG    
-    
+
+#ifdef _DEBUG_MEMORY
     if (0 == mcheck_pedantic(mcheckAbortfunc))
     {
         LOG1("Activated mcheck!\n");
@@ -149,12 +161,15 @@ void initCommen(const char* appName, CommonErrorHandler errHandler)
         ERROR1("Failed to activate mcheck\n");
         perror("mcheck");
     }
-     
+#endif
+
+#ifdef _DEBUG
     char fileName[100];
     snprintf(fileName,sizeof(fileName),"%s/lemvos_%s.log",LOG_FILE_PATH,appName?appName:"XX");
     fprintf(stderr,"-->> See %s for messages\n",fileName);
     __err_log = fopen(fileName,"w");
-#endif    
+#endif
+
 }
 
 void finalizeCommen()
@@ -191,9 +206,9 @@ void *memory_aloc(size_t size)
             _min_mem = memory;
         }
 
-        if ((memory + size) > _max_mem)
+        if ((memory + size  + sizeof(magic_number)) > _max_mem)
         {
-            _max_mem = memory + size;
+            _max_mem = memory + size  + sizeof(magic_number);
         }
         
         return memory + sizeof(magic_number);
@@ -219,6 +234,19 @@ void memory_free(void *mem)
     }
 }
 
+int memory_is_my_memory(void *mem)
+{
+    char *memory = ((char*)mem) -  sizeof(magic_number);
+    magic_number *mem_num = (magic_number *)memory;
+    
+    if (MEMORY_MAGIC == *mem_num)
+    {    
+        return 1;
+    }
+    
+    return 0;
+}
+
 void *memory_realloc(void* mem, size_t size)
 {
     if (mem)
@@ -242,9 +270,9 @@ void *memory_realloc(void* mem, size_t size)
                     _min_mem = memory;
                 }
 
-                if ((memory + size) > _max_mem)
+                if ((memory + size + sizeof(magic_number)) > _max_mem)
                 {
-                    _max_mem = memory + size;
+                    _max_mem = memory + size + sizeof(magic_number);
                 }       
                 
                 magic_number *mem_num = (magic_number *)memory;
@@ -287,7 +315,7 @@ char *memory_strndup(const char* str, size_t size)
     return mem;
 }
 
-#ifdef _DEBUG
+#ifdef _DEBUG_MEMORY
 void memory_check()
 {
     mcheck_pedantic(mcheckAbortfunc);
@@ -368,8 +396,8 @@ void commenStringCat(char *dest, const char* src, int len)
 // Use static string arrays here
 char* commenStripString(char *string)
 {        
-    const char *begin_stripchar = "\" ({\t\n";
-    const char *end_stripchar = "\")}\t\n";
+    const char *begin_stripchar = "\" ({\t\n\r";
+    const char *end_stripchar = "\")}\t\n\r";
     
     if (string)
     {
@@ -581,13 +609,13 @@ double commenStringToDouble(const char* str)
         
         if (ptr && *ptr)
         {
-            commenPrintError(errno,"Error: Failed to convert \"%s\" to value at \"%s\".\n",str,ptr?ptr:"<null>");
+            ERROR("Error: Failed to convert \"%s\" to value at \"%s\".\n",str,ptr?ptr:"<null>");
         }
         
         return x;
     }
     
-    fprintf(stderr,"Error: Can not convert empty string to double.\n");
+    ERROR1("Error: Can not convert empty string to double.\n");
     
     return 0;
 }
@@ -613,13 +641,13 @@ long commenStringToLong(const char* str)
         
         if (endptr && *endptr)
         {
-            commenPrintError(errno,"Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
+            ERROR("Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
         }
         
         return x;
     }
     
-    commenPrintError(errno,"Error: Can not convert empty string to long.\n");
+    ERROR1("Error: Can not convert empty string to long.\n");
     
     return 0;
 }
@@ -645,13 +673,13 @@ unsigned long long commenStringToULongLong(const char* str)
         
         if (endptr && *endptr)
         {
-            commenPrintError(errno,"Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
+            ERROR("Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
         }
         
         return x;
     }
     
-    commenPrintError(errno,"Error: Can not convert empty string to unsigned long.\n");
+    ERROR1("Error: Can not convert empty string to unsigned long.\n");
     
     return 0;
 }
@@ -677,13 +705,13 @@ long long commenStringToLongLong(const char* str)
         
         if (endptr && *endptr)
         {
-            commenPrintError(errno,"Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
+            ERROR("Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
         }
         
         return x;
     }
     
-    commenPrintError(errno,"Error: Can not convert empty string to unsigned long.\n");
+    ERROR1("Error: Can not convert empty string to unsigned long.\n");
     
     return 0;
 }
@@ -709,13 +737,13 @@ unsigned long commenStringToULong(const char* str)
         
         if (endptr && *endptr)
         {
-            commenPrintError(errno,"Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
+            ERROR("Error: Failed to convert \"%s\" to value at \"%s\".\n",str,endptr?endptr:"<null>");
         }
         
         return x;
     }
     
-    commenPrintError(errno,"Error: Can not convert empty string to unsigned long.\n");
+    ERROR1("Error: Can not convert empty string to unsigned long.\n");
     
     return 0;
 }
@@ -898,4 +926,88 @@ RepresentationType commenGetRepresentation(const char* name)
     }
     
     return 0;
+}
+
+const char *commenPrefixString(const char *prefix, char *string, int bufferSize)
+{
+    int prefixlen = strlen(prefix);
+    int stringlen = strlen(string);
+
+    if (prefixlen + stringlen + 1 < bufferSize)
+    {
+        memmove(&string[prefixlen],string,stringlen);
+        memcpy(string,prefix,prefixlen);
+
+        string[prefixlen+stringlen] = 0;
+    }
+
+    return string;
+}
+
+int isFileExists(const char*fileName)
+{
+   struct stat file_info;
+
+   if (0  == stat(fileName,&file_info))
+   {
+       if (S_ISREG(file_info.st_mode))
+       {
+           return 1;
+       }
+   }
+
+   return 0;
+}
+
+
+const char *commenNextInStringList(const char* strlist, char sep, char *buffer, int bufferSize)
+{
+    if (strlist)
+    {
+        const char* s = strlist;
+        while (*s)
+        {
+            if (*s == sep)
+            {
+                s++;
+                if (0 == *s)
+                {
+                    return NULL;
+                }
+                
+                const char*e = strchr(s,sep);
+                if (e)
+                {
+                    if (e-s < bufferSize)
+                    {
+                        memcpy(buffer,s,e-s);
+                        buffer[e-s] = 0;
+                        return s;
+                    }
+                }
+                
+                break;
+            }
+                        
+            s++;
+        }
+        
+        strncpy(buffer,strlist,bufferSize);
+        
+        return NULL;
+    }
+    
+    return NULL;
+}
+
+unsigned long commenFileSize(const char* fileName)
+{
+    struct stat file_info;
+
+   if (0  == stat(fileName,&file_info))
+   {
+       return file_info.st_blocks * 512;
+   }
+   
+   return 0;
 }

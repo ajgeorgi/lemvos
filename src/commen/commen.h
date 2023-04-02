@@ -97,6 +97,13 @@
 #define GMATH_VAN_DER_WALLS_WATER_B          31 /* 10-6*m³/mol */
 #define GMATH_IDEAL_GAS_CONST_R              8.31447 /* J/mol/K */
 
+#ifdef M_PIl
+#define GMATH_PI  M_PIl
+#else
+#define GMATH_PI  M_PI
+#endif
+
+
 #define __STR(arg)  #arg
 #define _STR(arg)   __STR(arg)
 
@@ -105,6 +112,7 @@
 #define NORM_LENGTH 300.0
 
 #define UNKNOWN_SYMBOL "<unknown>"
+#define LEMVOS_PATH "LemvosPath"
 
 /* Supposed to be always a 3 dimensional array */
 typedef double EPoint;
@@ -197,21 +205,30 @@ unsigned long long commenStringToULongLong(const char* str);
 
 const char *commenNameFromModel(const char* modelName);
 
+const char *commenNextInStringList(const char* strlist, const char sep, char *buffer, int bufferSize);
+
+const char *commenPrefixString(const char *prefix, char *string, int bufferSize);
+
 int commenNow(LTime *time);
 int commenIsTime(LTime *time);
 long commenTimeDiff(LTime *time1, LTime *time2);
 
 int commenIsLabel(const char* label);
 
+int isFileExists(const char*fileName);
+unsigned long commenFileSize(const char*fileName);
+
 RepresentationType commenGetRepresentation(const char* name);
 
 extern void *memory_aloc(size_t size);
-extern void memory_free(void *mem);
+extern void  memory_free(void *mem);
 extern void *memory_realloc(void* mem, size_t size);
 extern char *memory_strdup(const char* str);
 extern char *memory_strndup(const char* str, size_t size);
+extern int memory_is_my_memory(void *mem);
 
-#ifdef _DEBUG
+
+#ifdef _DEBUG_MEMORY
 extern void memory_check();
 #endif
 
