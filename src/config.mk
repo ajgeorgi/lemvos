@@ -1,16 +1,25 @@
 # for compilation
+#CC=clang
+#CPP=clang++
+CC=gcc
+CPP=g++
 OPT= -g
-WARN= -Werror -Wall -Wextra -Winit-self -Wno-format-truncation -Wno-implicit-fallthrough
+
+GNU_WARN= -Werror -Wall -Wextra -Winit-self -Wpacked
+# -Wno-format-truncation -Wno-implicit-fallthrough
+CLANG_WARN= -Werror -Wall -Wno-typedef-redefinition
+WARN=$(GNU_WARN)
+
 COMPILE= -std=gnu99
-CPPCOMPILE=
-INCLUDE= -I../commen -I.
-# Try this -> -D_DEBUG_TODO -D_DEBUG_FIX
-DEFS=-D_DEBUG -D_DEBUG_MEM
+INCLUDE= -I../commen -I. -I/usr/local/include
+# Try this -> -D_DEBUG_TODO -D_DEBUG_FIX -D_DEBUG_MEMORY
+DEFS=-D_DEBUG -D_DEBUG_MEM -D_DEBUG_MEMORY
 
 # for linking
 LFLAGS= 
 #LSTATIC=-static
 #LSHARED=-shared
+X11LIBSDIR=-L/usr/local/lib
 
 # for testing
 TEST=lemvos
