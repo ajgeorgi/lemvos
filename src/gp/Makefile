@@ -4,7 +4,6 @@ build: libGP
 
 obj = ../commen/commen.o texprinter.o pdfprinter.o exporter.o
 
-CC = gcc
 CFLAGS += $(DEFS) $(WARN) $(COMPILE) $(OPT) -I../gm -I../../include -I../commen
 
 libGP: $(obj) 
