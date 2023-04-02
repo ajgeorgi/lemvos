@@ -68,9 +68,17 @@ int pushBackToScanner(ReaderScanner *scanner, const char* token)
     return -1;
 }
 
-void initReader(CommonErrorHandler error_handler)
+void resetReader(CommonErrorHandler error_handler)
 {
     reader_error_handler = error_handler;
+    _object_table_index = 0;
+}
+
+ReaderT initLemvosReader()
+{
+    _reader_model = NULL;
+    _reader_solid = NULL;
+    _reader_polygon = NULL;
     
     readerRegisterObject(OBJ_MODEL, readerReadModel);
     readerRegisterObject(OBJ_SOLID, readerReadSolid);
@@ -78,6 +86,8 @@ void initReader(CommonErrorHandler error_handler)
     readerRegisterObject(OBJ_POLYGON, readerReadPolygon);
     readerRegisterObject(OBJ_VERTEX, readerReadVertex);
     readerRegisterObject(OBJ_MEASUREMENT, readerReadMeasurement);
+    
+    return readerCreate;
 }
 
 int readerRegisterObject(ObjectType type, ReadObject reader)
@@ -103,7 +113,7 @@ const GObject *readerCreate(ReaderScanner *scanner)
     {
         IndexType index = 0;
         char *tok = readFromScanner(scanner);
-        ObjectType type = objectType(tok,&index);
+        ObjectType  type  = objectType(tok,&index);
         if (0 == type)
         {
             ERROR("Unknown object \"%s\" in file!!\n",tok);
@@ -143,16 +153,16 @@ const GObject *readerCreate(ReaderScanner *scanner)
             {
                 if (0 == object->index)
                 {
-                    LOG("Missing index for \"%s\"!\n",oName);
+                    LOG("Missing index for %s:\"%s\"!\n",objectName(object->type),oName);
                 }  
                 if (NULL == object->parent)
                 {
-                    LOG("Parent missing for \"%s\"!\n",oName);
+                    LOG("Parent missing for %s:\"%s\"!\n",objectName(object->type),oName);
                 }
                 if (0 == object->type)
                 {
                     LOG("Type missing for \"%s\"!\n",oName);
-                }
+                }                
             }
         }
     }
@@ -283,7 +293,7 @@ const GObject *readerReadModel(IndexType index, ReaderScanner* scanner)
         if (!commenIsTime(&_reader_model->last_modified) || !commenIsTime(&_reader_model->created))
         {
             ERROR("Reader: Time failed!!! %s,  %s\n",asctime(&_reader_model->last_modified),asctime(&_reader_model->created));
-        }
+        }        
     }
 
     

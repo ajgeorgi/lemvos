@@ -90,24 +90,29 @@ int tokenizerPushBack(const char* token)
     return -1;
 }
 
-void resetTokenizer(FILE *loaderFile)
+int resetTokenizer(FILE *loaderFile)
 {
-    if (_tokenizer.linebuffer)
-    {
-        free(_tokenizer.linebuffer);
-    }
-    
-    memset(&_tokenizer,0,sizeof(_tokenizer));
-    
-    _tokenizer.push_back_consumed = 1;
-    _tokenizer._loaderFile = loaderFile;
-    
     if (loaderFile)
     {
-        rewind(loaderFile);
+        if (_tokenizer.linebuffer)
+        {
+            free(_tokenizer.linebuffer);
+        }
+        
+        memset(&_tokenizer,0,sizeof(_tokenizer));
+        
+        _tokenizer.push_back_consumed = 1;
+        _tokenizer._loaderFile = loaderFile;
+        
+        if (loaderFile)
+        {
+            rewind(loaderFile);
+        }
+        
+        return 0;
     }
     
-    // fprintf(stderr,"Reset tokenizer\n");
+    return 1;
 }
 
 #define FLAGS_INSIDE_STRING (1<<0)

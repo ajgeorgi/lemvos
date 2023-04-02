@@ -11,7 +11,7 @@
 
 
 static int meaPaint(ViewerDriver *driver, struct GObjectT *object);
-static int deleteMeasurement(struct CObjectT *object);
+static void deleteMeasurement(struct CObjectT *object);
 
 Mea *createMesurement(GObject *parent)
 {
@@ -38,7 +38,7 @@ Mea *createMesurement(GObject *parent)
     return mea;
 }
 
-int deleteMeasurement(struct CObjectT *object)
+void deleteMeasurement(struct CObjectT *object)
 {
     Mea *mea = (Mea*)isCObject(OBJ_MEASUREMENT,object);
     if (mea)
@@ -64,33 +64,34 @@ int deleteMeasurement(struct CObjectT *object)
                 memory_free(mea->values);
             }
             
-            memory_free(mea);
+            memory_free(mea);                   
         }
+    }
+    else
+    {
+        char s1[GM_VERTEX_BUFFER_SIZE];
+        ERROR("Trouble deleting measurement on [%s]\n",vertexPath((GObject*)object,s1,sizeof(s1)));
+    }
+}
+
+int destroyAllMea(CObject *object)
+{
+    if (isCObject(ANY_COBJECT,object))
+    {
+        for (CObject* mea = object->first_mea; mea;)
+        {
+            CObject *next= (CObject* )isObject(mea->next);
+            deleteMeasurement(mea);
+            mea = next;
+        }
+        
+        object->first_mea = NULL;
+        object->last_mea = NULL;
         
         return 0;
     }
     
     return 1;
-}
-
-int destroyAllMea(CObject *object)
-{
-    for (CObject* mea = object->first_mea; mea;)
-    {
-        CObject *next= (CObject* )mea->next;
-        if (deleteMeasurement(mea))
-        {
-            char s1[GM_VERTEX_BUFFER_SIZE];
-            ERROR("Trouble deleting measurement on [%s]\n",vertexPath((GObject*)object,s1,sizeof(s1)));
-            break;
-        }
-        mea = next;
-    }
-    
-    object->first_mea = NULL;
-    object->last_mea = NULL;
-    
-    return 0;
 }
 
 
@@ -99,6 +100,13 @@ typedef struct UnitTableT {
     MeaUnit unit;    
 } UnitTable;
 
+
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-source-encoding"
+#endif
+
+// DON'T EVER REAORDER ANYTHING HERE!!!
 static const UnitTable _unitTable[] = {
     { "m" , MeaUnit_Meter },    
     { "mm" , MeaUnit_MiliMeter },
@@ -124,8 +132,17 @@ static const UnitTable _unitTable[] = {
     { "dm³", MeaUnit_CubicDeciMeter },
     { "Kg/dm³", MeaUnit_KiloPerCubicDeciMeter },
     { "Kg/mm³", MeaUnit_KiloPerCubicMiliMeter },
-    { "Kg/m³", MeaUnit_KiloPerCubicMeter }
+    { "Kg/m³", MeaUnit_KiloPerCubicMeter },
+    { "kpx²", MeaUnit_KiloSquarePixel },
+    { "kpx", MeaUnit_KiloPixel },
+    { "kpx³", MeaUnit_KiloCubicPixel },
 };
+// DON'T EVER REAORDER ANYTHING HERE!!!
+
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
+
 
 MeaUnit meaFindUnit(const char* str)
 {

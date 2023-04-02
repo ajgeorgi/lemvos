@@ -83,7 +83,10 @@ typedef enum MeaUnitT {
     MeaUnit_KiloPerCubicDeciMeter,
     MeaUnit_KiloPerCubicMiliMeter,
     MeaUnit_KiloPerCubicMeter,
-    
+    MeaUnit_KiloSquarePixel,
+    MeaUnit_KiloPixel,
+    MeaUnit_KiloCubicPixel,
+
     MeaUnit_Last
 } MeaUnit;
 // DON'T EVER REAORDER ANYTHING HERE!!!
@@ -115,15 +118,11 @@ typedef struct AreaAttributesT {
   double area1;
   double area2;
   double volume;
-  /*
-  double pressure_force;
-  double mass;
-  double gravity_force;
-  */
+
   struct VertexT *v1;
   struct VertexT *v2;
   struct VertexT *v3;
-  struct VertexT *v4;
+  // struct VertexT *v4;
     
 } AreaAttributes;
 
@@ -166,11 +165,11 @@ typedef struct MaterialT {
 
 
 typedef struct SolidT {
-    MagicNumber magic;    
+    MagicNumber magic;
     ObjectType type;
     IndexType  index;
     IndexType child_count;
-    flag_type flags;    
+    flag_type flags;
     struct GObjectT *parent;
     struct GObjectT *next;
 // ---------------------------
@@ -182,8 +181,12 @@ typedef struct SolidT {
     struct CObjectT *last_mea;  
     struct MaterialT *material;
     EPoint p[GM_VERTEX_DIMENSION]; // Origin
-    char *comments;
-    RepresentationType rep_type;    
+    char *comments;   
+    RepresentationType rep_type;
+// --------------------------    
+    BoundingBox original_box;
+    Normale normal;    
+    struct MeshT *wettet;
 // --------------------------    
     
     Polygon *first;
@@ -192,13 +195,7 @@ typedef struct SolidT {
     // Original data from file. No manipulations here.
     Polygon *first_original;
     Polygon *last_original;
-    BoundingBox original_box;
-
-    Normale normal;
     
-    // The wettet area of the solid
-    Mesh *wettet;
-
     flag_type triang_filter;
 } Solid;
 
@@ -237,19 +234,40 @@ typedef struct VertexT {
     struct GObjectT *parent;
     struct GObjectT *next;
 // ---------------------------
-
-    int refCount;
+// Don't change this because of cloning
+   int refCount;
     
   EPoint x[GM_VERTEX_DIMENSION];
-
+// ---------------------------
+  
   struct VertexT **connections;
   int number_of_connections;
   int max_number_of_connections;
   
-  AreaAttributes *first_attrib;
+  AreaAttributes *first_attrib;    
   AreaAttributes *last_attrib;
   
 } Vertex;
+
+
+typedef struct TriangleT {
+    MagicNumber magic;    
+    ObjectType type;
+    IndexType  index;
+    IndexType child_count;
+    flag_type flags;    
+    struct GObjectT *parent;
+    struct GObjectT *next;
+// ---------------------------
+
+    Vertex v[3];
+    
+    Normale normale;
+    
+    double area;
+    double volume;
+
+} Triangle;
 
 typedef struct ModelT {
     MagicNumber magic;    
@@ -286,32 +304,41 @@ typedef struct ModelT {
 } Model;
 
 typedef struct MeshT {
-    MagicNumber magic;    
+    MagicNumber magic;
     ObjectType type;
     IndexType  index;
-    IndexType child_count;  
-    flag_type flags;    
+    IndexType child_count;
+    flag_type flags;
     struct GObjectT *parent;
     struct GObjectT *next;
 // ---------------------------
-     CObjectMethods methods;    
+    CObjectMethods methods;    
     char name[MODEL_NAME_SIZE];
     BoundingBox box;
     int refCount;
     struct CObjectT *first_mea;
     struct CObjectT *last_mea;  
     struct MaterialT *material;
-    EPoint p[GM_VERTEX_DIMENSION]; // Origin    
+    EPoint p[GM_VERTEX_DIMENSION]; // Origin
     char *comments;   
-    RepresentationType rep_type;    
+    RepresentationType rep_type;
+// --------------------------    
+    BoundingBox original_box;
+    Normale normal;    
+    struct MeshT *wettet;
 // --------------------------    
 
-
-  Vertex **mesh;
-  unsigned int number_of_vertices;
-  unsigned int max_number_of_vertices;
+    Vertex *mesh;
+    unsigned int number_of_vertices;
+    unsigned int max_number_of_vertices;
+    unsigned int real_number_of_vertices;
   
-  unsigned long long _iter;
+    // Original data from file. No manipulations here.
+    Vertex *original_mesh;
+    unsigned int original_number_of_vertices;
+    unsigned int original_max_number_of_vertices;
+  
+    unsigned long long _iter;
   
 } Mesh;
 
@@ -319,6 +346,7 @@ typedef struct MeshT {
 #include "iterator.h"
 
 extern Vertex *createVertex(GObject *parent, EPoint *x);
+extern int vertexCloneVertex(Vertex *v, const Vertex *v1);
 
 // extern int vertexIsBoxEmpty(const BoundingBox *box);
 extern int vertexIsNull(const EPoint *x, EPointL epsilon);
@@ -385,22 +413,24 @@ Vertex *vertexShareParentConnection(const Vertex *v1, const Vertex *v2);
 Vertex *vertexIsConnected(Vertex *v1, Vertex *v2);
 Vertex *vertexConnectedParent(CObject *object, Vertex *v1, flag_type mask);
 
+int vertexCloneVertex(Vertex *v, const Vertex *v1);
+
+// SOLID
 Solid *createSolid(GObject *parent);
-void solidDestroy(Solid *solid);
-// int solidRotateSolid(Solid *solid, double yaw, double roll, double pitch, double heave);
-int solidAddComment(Solid *solid, const char* comment, int size);
-// int solidRemoveVertex(CObject *object, GObject *v);
+// void solidDestroy(CObject *solid);
+// int objectAddComment(CObject *object, const char* comment, int size);
 
-Mesh *createMesh(GObject *parent);
-void meshDestroy(Mesh *mesh);
-//Vertex *meshIterator(Mesh *mesh, unsigned long long *iter);
-// int meshIteratorRemove(Mesh *mesh, Vertex *v, unsigned long long iter);
-
-// int meshAddEPoint(Mesh *mesh, EPoint *v);
-int meshAddVertex(Mesh *mesh, Vertex *v);
+// MESH
+Mesh *createMesh(GObject *parent, int size);
+// void meshDestroy(CObject *mesh);
+// int meshExtend(Mesh *mesh, int size);
+Vertex* meshAddPoint(Mesh *mesh, EPoint *x);
 void meshClear(Mesh *mesh);
-long meshSize(Mesh *mesh);
-// int meshRemoveVertex(CObject *object, GObject *v);
+
+// TRIANGLE
+Triangle *createTriangle(GObject *parent, EPoint *x1, EPoint *x2, EPoint *x3);
+void vertexDestroyTriangle(Triangle *tri);
+
 
 Model *createModel();
 

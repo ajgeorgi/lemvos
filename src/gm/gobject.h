@@ -21,38 +21,45 @@
 #define VTABLE_MAGIC 0xAB1E01F8
 #define VINPUT_MAGIC 0x81E90FB2
 #define VCOMBO_MAGIC 0xC03B01B5
-#define VMATTER_MAGIC 0xA77B0F8E
+#define VCOMPONENT_MAGIC 0xA77B0F8E
 #define VVALUE_MAGIC  0x7A11BCF3
 #define VTABSHEET_MAGIC  0x7AB58EE7
 #define VATTRIB_MAGIC 0xA741B07F
 #define VCONFIG_MAGIC 0xC0EF1648
+#define VTRIANGLE_MAGIC 0x76A467EB
 
 // Complex objects class
 #define _COBJ_MARKER (1<<16)
 // Widgets class
 #define _WOBJ_MARKER (1<<17)
+// Data object class
+#define _DOBJ_MARKER (1<<18)
+// A static object no from dynamic memory
+#define _SOBJ_MARKER (1<<19)
 // Type identifier mask
 #define _OBJ_TYPE_MASK 0x7fff
 
 #define ANY_COBJECT 0
+#define ANY_DOBJECT 0
 
 #define OBJ_MODEL (1 | _COBJ_MARKER )
-#define OBJ_SOLID (2 | _COBJ_MARKER )
+#define OBJ_SOLID (2 | _COBJ_MARKER | _DOBJ_MARKER)
 #define OBJ_POLYGON 3
 #define OBJ_MATERIAL 4
 #define OBJ_VERTEX 5
 #define OBJ_MEASUREMENT (6 | _COBJ_MARKER )
 #define OBJ_BOX 7
-#define OBJ_MESH (8 | _COBJ_MARKER )
+#define OBJ_MESH (8 | _COBJ_MARKER | _DOBJ_MARKER )
 #define OBJ_WIDGET (9 | _WOBJ_MARKER)
 #define OBJ_TABLE (10 | _WOBJ_MARKER)
 #define OBJ_INPUT (11 | _WOBJ_MARKER)
 #define OBJ_COMBO (12 | _WOBJ_MARKER)
-#define OBJ_MATTER (13 | _COBJ_MARKER)
+#define OBJ_COMPONENT (13 | _COBJ_MARKER | _DOBJ_MARKER)
 #define OBJ_VALUE 14
 #define OBJ_TABSHEET (15 | _WOBJ_MARKER)
 #define OBJ_ATTRIB 16
 #define OBJ_CONFIG (17 | _WOBJ_MARKER)
+#define OBJ_TRIANGLE 18
 
 
 
@@ -124,6 +131,7 @@ struct GObjectT;
 struct CObjectT;
 struct MaterialT;
 struct MeaT;
+struct MeshT;
 
 #define MODEL_NAME_SIZE 64
 
@@ -223,9 +231,10 @@ extern CIter _empty_citerator;
 
 typedef int (*OperateOnCObject)(struct CObjectT *object);
 typedef int (*PaintCObject)(ViewerDriver *driver, struct GObjectT *object);
-typedef int (*DeleteCObject)(struct CObjectT *object);
+typedef void (*DeleteCObject)(struct CObjectT *object);
 typedef struct GObjectT* (*IterateCObject)(Iter* iter);
 typedef const struct GObjectT * (*IterateConstCObject)(CIter* iter);
+typedef long (*GetObjectSize)(const struct CObjectT *object); // Size in vertices
 
 
 #define DIALOG_CHOICE_SAVE 1
@@ -263,6 +272,7 @@ typedef struct CObjectMethodsT {
     RemoveVertex remove;
     CreateIterator creatIterator;
     CreateConstIterator creatConstIterator;
+    GetObjectSize objectSize;
 } CObjectMethods;
 
 typedef struct GObjectT {
@@ -298,9 +308,36 @@ typedef struct CObjectT {
 // --------------------------    
 } CObject;
 
+typedef struct DObjectT {
+    MagicNumber magic;
+    ObjectType type;
+    IndexType  index;
+    IndexType child_count;
+    flag_type flags;
+    struct GObjectT *parent;
+    struct GObjectT *next;
+// ---------------------------
+    CObjectMethods methods;    
+    char name[MODEL_NAME_SIZE];
+    BoundingBox box;
+    int refCount;
+    struct CObjectT *first_mea;
+    struct CObjectT *last_mea;  
+    struct MaterialT *material;
+    EPoint p[GM_VERTEX_DIMENSION]; // Origin
+    char *comments;   
+    RepresentationType rep_type;
+// --------------------------    
+    BoundingBox original_box;
+    Normale normal;    
+    struct MeshT *wettet;
+// --------------------------    
+} DObject;
+
 GObject* isObject(const void *obj);
 GObject* isGObject(ObjectType type, const void *obj);
 CObject* isCObject(ObjectType type, const void *obj);
+DObject* isDObject(ObjectType type, const void *obj);
 
 
 GObject *objectInit(GObject *obj, GObject *parent, IndexType index, ObjectType type);
@@ -311,7 +348,10 @@ const char*objectName(ObjectType type);
 
 ObjectType objectGetType(const GObject *obj);
 
-void gobjectClearBoundingBox(BoundingBox *box);
+int gobjectClearBoundingBox(BoundingBox *box);
 int  gobjectIsBoundingBoxCalculated(BoundingBox *box);
+
+int objectAddComment(CObject *object, const char* comment, int size);
+
 
 #endif // __GOBJECT__

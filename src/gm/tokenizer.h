@@ -9,7 +9,7 @@
   Copyright: Andrej Georgi -> axgeorgi@gmail.com
 */
 
-void resetTokenizer(FILE *loaderFile);
+int resetTokenizer(FILE *loaderFile);
 
 char* tokenizerToken();
 

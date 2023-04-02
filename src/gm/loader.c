@@ -16,6 +16,7 @@
 #include "configuration.h"
 #include "tokenizer.h"
 #include "reader.h"
+#include "stlreader.h"
 
 #define CONFIG_EXTENSION ".config"
 
@@ -41,7 +42,6 @@ static CommonErrorHandler loader_error_handler = NULL;
 void initLoader(CommonErrorHandler error_handler)
 {        
     loader_error_handler = error_handler;
-    initReader(error_handler);
 }
 
 void loaderPrintError(int err, const char* text, ...)
@@ -64,49 +64,111 @@ void loaderPrintError(int err, const char* text, ...)
     }    
 }
 
-
 int loaderLoadModel(Model **model, const char *fileName)
+{
+    return loaderLoadModelProgress(model, fileName, NULL, 0);
+}
+
+int loaderLoadModelProgress(Model **model, const char *fileName, LoaderProgress progress, int progressCount)
 {
     LOG("Reading model from \"%s\".\n",fileName);
 
-    _loaderFile = fopen(fileName,"r");
+    ReaderT reader = NULL;
+    const char *extension = strrchr(fileName,'.');        
     
-    if (NULL != _loaderFile)
+    if (extension)
     {
-        *model = NULL;
-        resetTokenizer(_loaderFile);
+        extension++;
+        
+        if (*extension)
+        {
+            resetReader(loader_error_handler);
 
+            if (0 == strncasecmp(extension,"model",sizeof("model")))
+            {
+                reader = initLemvosReader();
+            }
+            else
+            if (0 == strncasecmp(extension,"stl",sizeof("stl")))
+            {
+                reader = initSTLReader(100,fileName);
+            }
+            else
+            {
+                extension = NULL;
+            }
+        }
+        else
+        {
+            extension = NULL;
+        }        
+    }
+        
+    
+    if (extension && reader)
+    {    
+        int err = 0;
         ReaderScanner scanner;
         memset(&scanner,0,sizeof(scanner));
         
+        scanner.stream = fopen(fileName,"r");
         scanner.scanner = tokenizerToken;
         scanner.push_back = tokenizerPushBack;
         
-        for (const GObject *object = readerCreate(&scanner); 
-             !feof(_loaderFile) && (NULL != object); 
-             object = readerCreate(&scanner))
-        {    
+
+        if (0 == resetTokenizer(scanner.stream))
+        {
+            *model = NULL;
+            
+            for (const GObject *object = reader(&scanner); 
+                !scnannerEOF(&scanner) && (NULL != object); 
+                object = reader(&scanner))
+            {    
+                if (OBJ_MODEL == object->type)
+                {
+                    if (*model)
+                    {
+                        loaderPrintError(0,"Too many models in file!");
+                        err = 1;
+                        break;
+                    }
+                    
+                    *model = (Model*)object;                   
+                } 
+                else
+                {
 #ifdef _DEBUG_LOADER            
-               char s1[GM_VERTEX_BUFFER_SIZE];
-               LOG("Read: \"%s\"\n",vertexPath(object,s1,sizeof(s1)));
-#endif               
-               if (OBJ_MODEL == object->type)
-               {
-                   if (*model)
-                   {
-                       loaderPrintError(0,"Too many models in file!");
-                   }
-                   
-                   *model = (Model*)object;                   
-               }
+                    char s1[GM_VERTEX_BUFFER_SIZE];
+                    LOG("Read: \"%s\"\n",vertexPath(object,s1,sizeof(s1)));
+#endif                                  
+                    
+                    scanner.element_index++;
+                    
+                    if (progress && (1000 < scanner.number_of_elements))
+                    {
+                        if (0 == (scanner.element_index % progressCount))
+                        {
+                            if (progress(scanner.number_of_elements,scanner.element_index))
+                            {
+                                ERROR1("File load aborted\n");
+                                scannerShutdown(&scanner);
+                                err = 1;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            scannerShutdown(&scanner);
+            resetTokenizer(NULL);  
+               
+            LOG("File \"%s\" done.\n",fileName);
+            
+            return err;
         }
-        
-        fclose(_loaderFile);
-        _loaderFile = NULL;
-        resetTokenizer(_loaderFile);  
-                
-        return 0;
     }
+    
+    ERROR("Could not open \"%s\"\n",fileName?fileName:UNKNOWN_SYMBOL);
     
     return -1;
 }
@@ -315,6 +377,7 @@ const char* loaderGetConfigNameFromModel(const char* fileName, char* buffer, int
     char *postFix = NULL;
     int restBufferSize = bufferSize;
     
+    // find post fix
     for (char *i = buffer;*i;i++)
     {
         if ('.' == *i)
@@ -327,6 +390,7 @@ const char* loaderGetConfigNameFromModel(const char* fileName, char* buffer, int
         restBufferSize--;
     }
     
+
     if (postFix && (restBufferSize > (int)sizeof(CONFIG_EXTENSION)))
     {
         strcpy(postFix,CONFIG_EXTENSION);

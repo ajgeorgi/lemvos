@@ -30,7 +30,7 @@ Config *configCreate(const char* name, MeaUnit unit)
     config->ctype = ConfigType_Initial;
     config->unit = unit;
     
-#ifdef _DEBUG_MEM    
+#ifdef _DEBUG_MEMORY
     memory_check();
 #endif    
     

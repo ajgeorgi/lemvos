@@ -25,6 +25,9 @@ static Iter createIterate(CObject *object, flag_type mask);
 static CIter createConstIterate(const CObject *object, flag_type mask);
 static GObject *iterateSolid(Iter *iter);
 static const GObject *citerateSolid(CIter *iter);
+static void solidDestroy(CObject *object);
+
+static long solidSize(const CObject *obj);
 
 
 Solid *createSolid(GObject *parent)
@@ -40,8 +43,10 @@ Solid *createSolid(GObject *parent)
     solid->methods.remove = solidRemoveVertex;
     solid->methods.creatIterator = createIterate;
     solid->methods.creatConstIterator = createConstIterate;
+    solid->methods.destroy = solidDestroy;
+    solid->methods.objectSize = solidSize;
     
-    objectInit((GObject*)&solid->original_box, (GObject*)solid, 0, OBJ_BOX);
+    // objectInit((GObject*)&solid->original_box, (GObject*)solid, 0, OBJ_BOX);
     
     gobjectClearBoundingBox(&solid->original_box);
     solid->original_box.flags |= GO_BB_ORIGINAL_DATA;
@@ -49,12 +54,29 @@ Solid *createSolid(GObject *parent)
     return solid;
 }
 
+long solidSize(const CObject *obj)
+{
+    if (obj)
+    {
+        long count = 0;
+        CIter iter = gobjectCreateConstIterator(obj,0);
+        
+        for (const GObject *obj = gobjectConstIterate(iter); obj; obj = gobjectConstIterate(iter))
+        {
+            count ++;
+        }    
+        
+        return count;
+    }
+    return 0;
+}
+
 static Iter createIterate(CObject *object, flag_type mask)
 {
     Iter iter;
     memset(&iter,0,sizeof(Iter));
     
-    iter.object = object;
+    iter.object = isCObject(ANY_COBJECT,object);
     iter.mask = mask & ~GM_GOBJECT_FLAG_POLY_ORIGINAL;
     
     // s1 supposed to be a Vertex*
@@ -67,7 +89,7 @@ static CIter createConstIterate(const CObject *object, flag_type mask)
     CIter iter;
     memset(&iter,0,sizeof(CIter));
     
-    iter.object = object;
+    iter.object = isCObject(ANY_COBJECT,object);
     iter.mask = mask;
 
     // s1 supposed to be a Vertex*
@@ -87,37 +109,36 @@ GObject *iterateSolid(Iter *iter)
             GObject *next = NULL;
             if (NULL == iter->s1)
             {                
-                if (solid)
-                {
-                    iter->s2  = (GObject *)solid->first;
-                    for (; 
-                        iter->s2 && (iter->mask != (iter->s2->flags & iter->mask)); 
-                        iter->s2 = (GObject*)iter->s2->next);
+                iter->s2  = (GObject *)solid->first;
+                for (; 
+                    iter->s2 && (iter->mask != (iter->s2->flags & iter->mask)); 
+                    iter->s2 = (GObject*)iter->s2->next);
+                
                     
-                        
-                    if (iter->s2)
-                    {   
-                        Polygon* poly = (Polygon*)isGObject(OBJ_POLYGON,iter->s2);                        
-                        if (poly && (iter->mask == (iter->s2->flags & iter->mask)))
-                        {
-                            iter->s1 = (GObject*)poly->first;
-                        }
-                    }                    
-                }
+                if (iter->s2)
+                {   
+                    Polygon* poly = (Polygon*)isGObject(OBJ_POLYGON,iter->s2);                        
+                    if (poly && (iter->mask == (iter->s2->flags & iter->mask)))
+                    {
+                        iter->s1 = (GObject*)poly->first;
+                    }
+                }                    
                 
                 iter->s2 = NULL;
                 
-                return iter->s1;
+                return iter->s1; // First vertex of first matching polygon
             }
             else
             {
-                next = iter->s1->next;
+                next = iter->s1->next; // next vertex
                 iter->s1 = next;
             
                 if (next && (NULL == next->next))
                 {   
+                    // last vertex of current polygon ...                    
                     if (iter->s1->parent)
                     {
+                        // ... need new polygon
                         iter->s2 = (GObject*)isGObject(OBJ_POLYGON,iter->s1->parent->next);
                         
                         for (; 
@@ -128,6 +149,7 @@ GObject *iterateSolid(Iter *iter)
                         {
                             if (iter->mask != (iter->s2->flags & iter->mask))
                             {
+                                // No match
                                 iter->s2 = NULL;
                             }
                         }
@@ -591,16 +613,15 @@ int paintSolid(ViewerDriver *driver, GObject *object)
     return 0;
 }
 
-void solidDestroy(Solid *solid)
+void solidDestroy(CObject *object)
 {
-    if (isCObject(OBJ_SOLID,(GObject*)solid))
+    Solid *solid = (Solid *)isCObject(OBJ_SOLID,(GObject*)object);
+    if (solid)
     {
         solid->refCount--;
         if (0 >= solid->refCount)
         {
             destroyAllMea((CObject*)solid);
-
-            solid->magic = 0;
             
             char s1[GM_VERTEX_BUFFER_SIZE];            
             
@@ -647,6 +668,8 @@ void solidDestroy(Solid *solid)
                 solid->material = NULL;
             }
             
+            solid->magic = 0;
+
             if (solid->comments)
             {
                 memory_free(solid->comments);
@@ -656,21 +679,6 @@ void solidDestroy(Solid *solid)
     }    
 }
 
-int solidAddComment(Solid *solid, const char* comment, int size)
-{
-    if (isCObject(OBJ_SOLID,solid))
-    {
-        if (solid->comments)
-        {
-            memory_free(solid->comments);
-        }
-        solid->comments =  memory_strndup(comment, size);
-        
-        return 0;
-    }
-    
-    return -1;
-}
 
 /*
 static int solidTransformVertex(const CObject *object, const EPoint *v1, EPoint *v2)

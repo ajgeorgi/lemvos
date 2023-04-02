@@ -35,18 +35,20 @@ Object _objects[] = {
     { VPOLY_MAGIC, OBJ_POLYGON, "Poly" , sizeof("Poly")-1},
     { VMATERIAL_MAGIC, OBJ_MATERIAL, "Material" , sizeof("Material")-1 },
     { VVERTEX_MAGIC, OBJ_VERTEX, "V" , sizeof("V")-1 },
-    { VMEA_MAGIC, OBJ_MEASUREMENT, "Calc", sizeof("Calc")-1 },
+    { VMEA_MAGIC, OBJ_MEASUREMENT, "ZCalc", sizeof("ZCalc")-1 },
     { VBOX_MAGIC, OBJ_BOX, "Box", sizeof("Box")-1 },
     { VMESH_MAGIC, OBJ_MESH, "Mesh", sizeof("Mesh")-1 },
     { VWIDGET_MAGIC, OBJ_WIDGET, "Widget", sizeof("Widget")-1 },
     { VTABLE_MAGIC, OBJ_TABLE, "Table", sizeof("Table")-1 },
     { VINPUT_MAGIC, OBJ_INPUT, "Input", sizeof("Input")-1 },
     { VCOMBO_MAGIC, OBJ_COMBO, "Kombo", sizeof("Combo")-1 },
-    { VMATTER_MAGIC, OBJ_MATTER, "Qube", sizeof("Qube")-1 },
+    { VCOMPONENT_MAGIC, OBJ_COMPONENT, "Component", sizeof("Component")-1 },
     { VVALUE_MAGIC, OBJ_VALUE, "Data", sizeof("Data") -1 },
     { VTABSHEET_MAGIC, OBJ_TABSHEET, "Sheet", sizeof("Sheet")-1 },
     { VATTRIB_MAGIC, OBJ_ATTRIB,"Attribut", sizeof("Attribut")-1 },
-    { VCONFIG_MAGIC, OBJ_CONFIG, "XFig", sizeof("XFig")-1 }
+    { VCONFIG_MAGIC, OBJ_CONFIG, "XFig", sizeof("XFig")-1 },
+    { VTRIANGLE_MAGIC, OBJ_TRIANGLE, "<Tri", sizeof("<Tri")-1 }
+    
 };
 
 
@@ -144,7 +146,10 @@ CObject* isCObject(ObjectType type, const void *obj)
 
             if ((_object->magic == gobj->magic) && ((ANY_COBJECT == type) || (_object->type == type)))
             {
-                return gobj; // TRUE
+                if (_object->type & _COBJ_MARKER)
+                {                
+                    return gobj; // TRUE
+                }
             }
         } 
 #ifdef _DEBUG  
@@ -182,6 +187,66 @@ CObject* isCObject(ObjectType type, const void *obj)
     return NULL; // FALSE        
 }
 
+DObject* isDObject(ObjectType type, const void *obj)
+{
+    if (obj && _check_memory((void*)obj))
+    {
+        DObject *gobj = ( DObject*)obj;
+        ObjectType otype = type & _OBJ_TYPE_MASK;
+        if (ANY_DOBJECT == type)
+        {
+            otype = gobj->type & _OBJ_TYPE_MASK;
+        }
+#ifdef _DEBUG                                    
+        ObjectType found_type = 0;
+#endif        
+        if ((0 < otype) && (otype <= (int)(sizeof(_objects)/sizeof(_objects[0]))))
+        {
+            Object *_object = &_objects[otype-1];
+
+            if ((_object->magic == gobj->magic) && ((ANY_DOBJECT == type) || (_object->type == type)))
+            {
+                if (_object->type & _DOBJ_MARKER)
+                {
+                    return gobj; // TRUE
+                }
+            }
+        } 
+#ifdef _DEBUG  
+        for (int i = 0; i < (int)(sizeof(_objects)/sizeof(_objects[0]));i++)
+        {
+            if (i + 1 != (_objects[i].type & _OBJ_TYPE_MASK))
+            {
+                FATAL1("Object type miss definition!\n");
+            }
+            
+            if (0 == _objects[i].magic)
+            {
+                FATAL1("Object magic not defined!\n");
+            }            
+            
+            if (gobj->magic == _objects[i].magic)
+            {
+                found_type = _objects[i].type & _OBJ_TYPE_MASK;
+                break;
+            }
+        }
+        
+        if (0 == found_type)
+        {
+            FATAL("Error: Type %i for DObject failed. Real type is %i.\n",type & _OBJ_TYPE_MASK, found_type & _OBJ_TYPE_MASK);
+        }
+        else
+        {
+            LOG("Warning: Type %i for DObject failed. Real type is %i.\n",type & _OBJ_TYPE_MASK, found_type & _OBJ_TYPE_MASK);
+        }
+        
+#endif
+    }
+    
+    return NULL; // FALSE        
+}
+
 GObject *objectInit(GObject *obj, GObject *parent, IndexType index, ObjectType type)
 {
     if (obj && _check_memory((void*)obj))
@@ -202,7 +267,12 @@ GObject *objectInit(GObject *obj, GObject *parent, IndexType index, ObjectType t
             {
                 ERROR("Reassigning object %i\n",obj->type & _OBJ_TYPE_MASK);
             }
-            
+
+            if (obj->type & _DOBJ_MARKER)
+            {
+                memset(obj,0,sizeof(DObject));
+            }
+            else            
             if (obj->type & _COBJ_MARKER)
             {
                 memset(obj,0,sizeof(CObject));
@@ -227,8 +297,23 @@ GObject *objectInit(GObject *obj, GObject *parent, IndexType index, ObjectType t
                 
                 objectInit((GObject*)&cobj->box, obj, 0, OBJ_BOX);
                 
-                gobjectClearBoundingBox(&cobj->box);
+                if (gobjectClearBoundingBox(&cobj->box))
+                {
+                    ERROR("Failed to clean BB on C%i",index);
+                }
             }            
+
+            if (obj->type & _DOBJ_MARKER)
+            {
+                DObject *dobj = (DObject *)obj;
+                
+                objectInit((GObject*)&dobj->original_box, obj, 0, OBJ_BOX);
+                
+                if (gobjectClearBoundingBox(&dobj->original_box))
+                {
+                    ERROR("Failed to clean BB on D%i",index);
+                }
+            }                        
         }
         else
         {
@@ -279,21 +364,21 @@ IndexType objectGetIndex(GObject *obj)
     return 0;
 }
 
-int objectType(char *obj, IndexType *index)
+int objectType(char *obj_name, IndexType *index)
 {
-    if (obj)
+    if (obj_name)
     {
         for (unsigned int i = 0; i < sizeof(_objects)/sizeof(_objects[0]); i++)
         {
             if (_objects[i].name)
             {
-                if (0 == strncmp(obj,_objects[i].name, _objects[i].name_length))
+                if (0 == strncmp(obj_name,_objects[i].name, _objects[i].name_length))
                 {
                     if (index)
                     {
                         *index = 0;
                         char *idxstart = NULL;
-                        for (char *s = strrchr(obj,'\0') - 1; obj<s; s--)
+                        for (char *s = strrchr(obj_name,'\0') - 1; obj_name<s; s--)
                         {
                             if (isdigit(*s))
                             {
@@ -322,7 +407,7 @@ int objectType(char *obj, IndexType *index)
     }
     
 #ifdef _DEBUG_LOADER    
-    LOG("No object found for %s\n",obj?obj:UNKNOWN_SYMBOL);
+    LOG("No object found for %s\n",obj_name?obj_name:UNKNOWN_SYMBOL);
 #endif
     
     return 0;
@@ -333,10 +418,11 @@ const char*objectName(ObjectType type)
 {
     for (int i = 0; i < (int)(sizeof(_objects)/sizeof(_objects[0]));i++)
     {
-        if (type == _objects[i].type)
+        // Static memory does not change the object name
+        if ((type & ~_SOBJ_MARKER) == (_objects[i].type & ~_SOBJ_MARKER))
         {
             return _objects[i].name;
-        }
+        }        
     }
     
     return NULL;
@@ -360,7 +446,7 @@ ObjectType objectGetType(const GObject *obj)
     return 0;
 }
 
-void gobjectClearBoundingBox(BoundingBox *box)
+int gobjectClearBoundingBox(BoundingBox *box)
 {
     if (isGObject(OBJ_BOX,box))
     {
@@ -377,7 +463,11 @@ void gobjectClearBoundingBox(BoundingBox *box)
         box->min[0] = HUGE_VAL;
         box->min[1] = HUGE_VAL;
         box->min[2] = HUGE_VAL;        
+        
+        return 0;
     }
+    
+    return 1;
 }
 
 int  gobjectIsBoundingBoxCalculated(BoundingBox *box)
@@ -391,4 +481,20 @@ int  gobjectIsBoundingBoxCalculated(BoundingBox *box)
     }
     
     return 0;
+}
+
+int objectAddComment(CObject *object, const char* comment, int size)
+{
+    if (isCObject(ANY_COBJECT,object))
+    {
+        if (object->comments)
+        {
+            memory_free(object->comments);
+        }
+        object->comments =  memory_strndup(comment, size);
+        
+        return 0;
+    }
+    
+    return -1;
 }

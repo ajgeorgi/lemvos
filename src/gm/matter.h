@@ -1,22 +1,17 @@
-#ifndef __MATTER__
-#define __MATTER__
+#ifndef __COMPONENT__
+#define __COMPONENT__
 
-/* Matter for GV 23.12.2022
+/* Component for GV 23.12.2022
 
 
   Copyright: Andrej Georgi -> axgeorgi@gmail.com
 */
 
 #include "gobject.h"
+#include "vertex.h"
 
-typedef struct BlockT {
-    // Position of each block is determined by its index i³ of blocks[width,height,length]
-    double dot_distance; // Default is 100 mm
-    unsigned long long block[16];
-    struct BlockT *sub_blocks[1024];
-} Block;
 
-typedef struct MatterT {
+typedef struct ComponentT {
     MagicNumber magic;
     ObjectType type;
     IndexType  index;
@@ -36,18 +31,22 @@ typedef struct MatterT {
     char *comments;    
     RepresentationType rep_type;    
 // ---------------------------
+    BoundingBox original_box;
+    Normale normal;    
+    struct MeshT *wettet;
+// --------------------------    
 
-
-    int width;
-    int height;
-    int length;
+    Triangle *tris;
     
-    Block *blocks;
+    unsigned int number_of_triangles;
+    unsigned int max_number_of_triangles;  
+    unsigned int real_number_of_triangles;
     
-} Matter;
+} Component;
 
-Matter *createMatter(GObject *parent);
-void matterDestroy(Matter *matter);
+Component *createComponent(GObject *parent, int size);
+void componentDestroy(CObject *component);
 
+Triangle *componentAddTriangle(Component *component, EPoint *x1, EPoint *x2, EPoint *x3);
 
-#endif
+#endif // __COMPONENT__

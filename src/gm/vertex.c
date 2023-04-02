@@ -39,13 +39,17 @@ static int _checkVertex(const char* str, int line, const Vertex *vertex)
         {            
             if (vertex->refCount <= 0)
             {
-                char vstr[GM_VERTEX_BUFFER_SIZE];
-                ERROR("%s:%i:Vertex %s with no reference in Solid\n",                        
-                        str?str:UNKNOWN_SYMBOL,line,
-                        vertexToString(vertex,vstr,sizeof(vstr),GM_V2S_FLAGS_DEBUG)
-                       );
-                
-                err = -1;
+                // We accept staic memory here. Because they rest in unused arrays
+                if (0 == (vertex->type & _SOBJ_MARKER))
+                {
+                    char vstr[GM_VERTEX_BUFFER_SIZE];
+                    ERROR("%s:%i:Vertex %s with no reference in Solid\n",                        
+                            str?str:UNKNOWN_SYMBOL,line,
+                            vertexToString(vertex,vstr,sizeof(vstr),GM_V2S_FLAGS_DEBUG)
+                        );
+                    
+                    err = -1;
+                }
             }    
         }
         else
@@ -76,6 +80,95 @@ Vertex *createVertex(GObject *parent, EPoint *x)
     }
     
     return NULL;
+}
+
+
+Triangle *createTriangle(GObject *parent, EPoint *x1, EPoint *x2, EPoint *x3)
+{
+    if (isObject((GObject*)parent))
+    {    
+        Triangle *tri = memory_aloc(sizeof(Triangle));
+        memset(tri,0,sizeof(Triangle));
+        
+        objectInit((GObject*)tri, (GObject*)parent,/* index */  0, OBJ_TRIANGLE);
+
+        if (x1)
+        {
+            CopyEPoint(tri->v[0].x,x1);
+        }
+        
+        if (x2)
+        {
+            CopyEPoint(tri->v[1].x,x2);
+        }
+        
+        if (x3)
+        {
+            CopyEPoint(tri->v[2].x,x3);
+        }
+        
+        return tri;
+    }
+    
+    return NULL;
+}
+
+void vertexDestroyTriangle(Triangle *tri)
+{
+    if (isGObject(OBJ_TRIANGLE,tri))
+    {
+        char s1[GM_VERTEX_BUFFER_SIZE];
+        vertexPath((GObject*)tri,s1,sizeof(s1));
+
+        for (int i = 0; i < (int)(sizeof(tri->v)/sizeof(tri->v[0]));i++)
+        {
+            // This is a special case and vertexDestroy() can handle it :-)!
+            vertexDestroy(&tri->v[i]);
+        }
+        
+        
+        tri->magic = 0;
+        if (0 == (_SOBJ_MARKER & tri->type))
+        {     
+#ifdef _DEBUG_DELETING                                
+            LOG("Deleting [%s] for real\n",s1);
+#endif                
+            
+            memory_free(tri);
+        }
+    }
+}
+
+int vertexCloneVertex(Vertex *v, const Vertex *v1)
+{
+    if (v && v1)
+    {
+        const int len = ((const char*)&v->x)-((const char*)v);
+        
+        memcpy(&v->x,&v1->x,len);
+        
+        AreaAttributes *attrib = v1->first_attrib;
+        while(attrib)
+        {
+            if (attrib->flags & GM_ATTRIB_FLAG_VALID)
+            {
+                vertexCloneAttribute(v, attrib);
+            }
+            attrib = (AreaAttributes*)attrib->next;
+        }
+
+        // Check what when v->connections exists???
+        if (NULL == v->connections)
+        {
+            v->connections = memory_aloc(sizeof(v1->connections[0]) * v1->max_number_of_connections);
+        }
+        
+        memcpy(v->connections,v1->connections,sizeof(v1->connections[0]) * v1->number_of_connections);
+        v->number_of_connections = v1->number_of_connections;
+        v->max_number_of_connections = v1->max_number_of_connections;
+    }
+    
+    return 0;
 }
 
 int vertexIsNull(const EPoint *x, EPointL epsilon)
@@ -651,26 +744,51 @@ int vertexDestroy(Vertex *vertex)
 #endif    
         
         vertex->refCount--;
+        char s1[GM_VERTEX_BUFFER_SIZE];
+        vertexPath((GObject*)vertex,s1,sizeof(s1));
         
         if (0 >= vertex->refCount)
-        {
+        {            
             vertex->magic = 0;
             if (vertex->connections)
             {
                 memory_free(vertex->connections);
+                vertex->connections = NULL;
             }
             if (vertex->first_attrib)
             {
                 AreaAttributes *norm = vertex->first_attrib;
                 while(norm)
                 {
-                    AreaAttributes *n = norm;
-                    norm = (AreaAttributes *)norm->next;
-                    vertexDestroyAttribute(n);
+                    norm->refCount--;
+                    if (0 >= norm->refCount)
+                    {
+                        AreaAttributes *n = norm;
+                        norm = (AreaAttributes *)norm->next;
+                        vertexDestroyAttribute(n);
+                    }
                 }
-            }        
-            memory_free(vertex);
+                
+                vertex->first_attrib = NULL;
+                vertex->last_attrib = NULL;
+            }    
+            if (0 == (_SOBJ_MARKER & vertex->type))
+            {     
+#ifdef _DEBUG_DELETING                                
+                LOG("Deleting [%s] for real\n",s1);
+#endif                
+                
+                memory_free(vertex);
+            }
+            
             return 0;
+        }
+        else
+        {
+            if (_SOBJ_MARKER & vertex->type)
+            {
+                ERROR("Did not delete static vertex [%s] due to references\n",s1);
+            }
         }
     }
     
@@ -791,9 +909,9 @@ int vertexCountVertices(const CObject *object, flag_type flag_mask)
     {   
         count = 0;
         CIter iter = gobjectCreateConstIterator(object,flag_mask);
-        for (const Vertex *v = (const Vertex *)gobjectConstIterate(iter); v; v = (const Vertex *)gobjectConstIterate(iter))
+        for (const GObject *obj = gobjectConstIterate(iter); obj; obj = gobjectConstIterate(iter))
         {
-            if ((v->flags & flag_mask) == flag_mask)
+            if ((obj->flags & flag_mask) == flag_mask)
             {
                 count++;
             }
@@ -976,12 +1094,12 @@ int _vertexAdjustNorm(EPoint *norm, const EPoint *x1, const EPoint *x2)
     if (fabsl(sp1) > 0.000001)
     {
         EPointL sign = sp1/(nn*ne1);
-        EPointL alpha1 = M_PIl/2 - acosl(sign);
-        if (fabsl(alpha1) > M_PI/720.0)
+        EPointL alpha1 = GMATH_PI/2 - acosl(sign);
+        if (fabsl(alpha1) > GMATH_PI/720.0)
         {        
             const EPointL d = sinl(alpha1) * nn;
 #ifdef _DEBUG_NORM            
-            LOG("Adjust: d1=%.6Lf, alpha1=%.4Lf° (nn=%.4Lf, nx1=%.4Lf, sp1=%.6Lf)\n",d,alpha1/M_PI*180.0,nn,ne1,sp1);
+            LOG("Adjust: d1=%.6Lf, alpha1=%.4Lf° (nn=%.4Lf, nx1=%.4Lf, sp1=%.6Lf)\n",d,alpha1/GMATH_PI*180.0,nn,ne1,sp1);
 #endif            
             EPointExtend(eps,-d,e1);        
             AddEPoints(norm,norm,eps);
@@ -995,8 +1113,8 @@ int _vertexAdjustNorm(EPoint *norm, const EPoint *x1, const EPoint *x2)
     if (fabsl(sp2) > 0.000001)
     {
         EPointL sign = sp2/(nn*ne2);
-        EPointL alpha2 = M_PIl/2 - acosl(sign);
-        if (fabsl(alpha2) > M_PI/720.0)
+        EPointL alpha2 = GMATH_PI/2 - acosl(sign);
+        if (fabsl(alpha2) > GMATH_PI/720.0)
         {
             const EPointL d = sinl(alpha2) * nn;
 #ifdef _DEBUG_NORM
@@ -1704,11 +1822,13 @@ int vertexReplaceConnections(CObject *object, Vertex* find, Vertex *replace, fla
                     attributes->v3 = replace;
                     match = 1;
                 }
+                /*
                 if (attributes->v4 == find)
                 {
                     attributes->v4 = replace;
                     match = 1;
                 }
+                */
                 
                 if (match)
                 {

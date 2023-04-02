@@ -25,7 +25,10 @@ static unsigned int _modelstore_vertex_count = 0;
 
 void initModelstore()
 {
-    _modelstore_vertex_count = 0;    
+    _modelstore_vertex_count = 0; 
+    
+    memset(&_empty_iterator,0,sizeof(_empty_iterator));
+    memset(&_empty_citerator,0,sizeof(_empty_citerator));
 }
 
 unsigned int modelstoreGetVertexCount()
@@ -50,33 +53,40 @@ Model *modelstoreGetModel(const char* name)
 
 Model *modelstoreCreate(const char *name, const char *owner)
 {
-    if (name && owner)
+    Model *model = createModel();
+    
+    if (model)
     {
-        Model *model = createModel();
-        
-        if (model)
+        if (name)
         {
             model->rep_type =  commenGetRepresentation(name);
-            
             strncpy(model->name,name,sizeof(model->name));
-            strncpy(model->owner,owner,sizeof(model->owner));
-            
-            if (NULL == _modelstore_first)
-            {
-                _modelstore_first = model;
-                _modelstore_last = model;
-            }
-            else
-            {
-                Model *prev = _modelstore_last;
-                _modelstore_last = model;
-                prev->next = (GObject*)model;
-            }
-            
-            LOG("Model \"%s\" created\n",name);
-            
-            return model;
         }
+        
+        if (owner)
+        {
+            strncpy(model->owner,owner,sizeof(model->owner));
+        }
+        else
+        {
+            strncpy(model->owner,"Unknown",sizeof(model->owner));
+        }
+        
+        if (NULL == _modelstore_first)
+        {
+            _modelstore_first = model;
+            _modelstore_last = model;
+        }
+        else
+        {
+            Model *prev = _modelstore_last;
+            _modelstore_last = model;
+            prev->next = (GObject*)model;
+        }
+        
+        LOG("Model \"%s\" created\n",name?name:UNKNOWN_SYMBOL);
+        
+        return model;
     }
     
     return NULL;
@@ -152,37 +162,110 @@ int modelstoreMoveSolidToBottom(Solid *solid)
     return -1;
 }
 
-Mesh *modelstoreCreateMesh(Model *model, const char* name)
+Mesh *modelstoreCreateMesh(Model *model, const char* name, int size)
 {
-    if (isCObject(OBJ_MODEL,(GObject*)model) && name)
+    if (isCObject(OBJ_MODEL,(GObject*)model))
     {
-        Mesh *mesh = createMesh((GObject*)model);
+        Mesh *mesh = createMesh((GObject*)model,size);
 
-        strncpy(mesh->name,name,sizeof(mesh->name));
-        
-        gobjectClearBoundingBox(&mesh->box);
- 
-        mesh->rep_type =  model->rep_type | commenGetRepresentation(name);
-        
-        if (NULL == model->last)
+        if (mesh)
         {
-            model->first = (CObject*)mesh;
-            model->last = (CObject*)mesh;
-        }
-        else
-        {
-            CObject *prev = model->last;
+            if (name)
+            {
+                strncpy(mesh->name,name,sizeof(mesh->name));
+                mesh->rep_type =  model->rep_type | commenGetRepresentation(name);
+            }
+            
+            gobjectClearBoundingBox(&mesh->box);
     
-            model->last = (CObject*)mesh;
-            prev->next = (GObject*)mesh;
-            mesh->refCount++;
+            if (NULL == model->last)
+            {
+                model->first = (CObject*)mesh;
+                model->last = (CObject*)mesh;
+            }
+            else
+            {
+                CObject *prev = model->last;
+        
+                model->last = (CObject*)mesh;
+                prev->next = (GObject*)mesh;
+                mesh->refCount++;
+            }
+            
+            return mesh;
         }
         
-        return mesh;
+        FATAL("Could not get mesh \"%s\" for %i vertices\n",name?name:UNKNOWN_SYMBOL,size);
     }
     
     return NULL;
 }
+
+Component *modelstoreCreateComponent(Model *model, const char* name, int size)
+{
+    if (isCObject(OBJ_MODEL,(GObject*)model))
+    {
+        Component *component = createComponent((GObject*)model,size);
+
+        if (component)
+        {
+            if (name)
+            {
+                strncpy(component->name,name,sizeof(component->name));
+                component->rep_type =  model->rep_type | commenGetRepresentation(name);
+            }
+            
+            gobjectClearBoundingBox(&component->box);
+    
+            if (NULL == model->last)
+            {
+                model->first = (CObject*)component;
+                model->last = (CObject*)component;
+            }
+            else
+            {
+                CObject *prev = model->last;
+        
+                model->last = (CObject*)component;
+                prev->next = (GObject*)component;
+                component->refCount++;
+            }
+            
+            return component;
+        }
+        
+        FATAL("Could not get component \"%s\" for %i vertices\n",name?name:UNKNOWN_SYMBOL,size);
+    }
+    
+    return NULL;
+}
+
+Vertex *modelstoreCreateVertex(Mesh *mesh, EPoint *v)
+{
+    if (isObject((GObject*)mesh))
+    {
+        char s1[GM_VERTEX_BUFFER_SIZE];
+        char s2[GM_VERTEX_BUFFER_SIZE];
+        
+        Vertex *vertex = meshAddPoint(mesh,v);
+        if (NULL == vertex)
+        {
+            ERROR("Failed to add [%s] to mesh [%s] \"%s\"\n",
+                  vertexPath((GObject*)vertex,s1,sizeof(s1)),
+                  vertexPath((GObject*)mesh,s2,sizeof(s2)),
+                  mesh->name);
+        }
+        else
+        {        
+            _modelstore_vertex_count++;
+        }
+        
+        return vertex;    
+    }
+    
+    return NULL;
+}
+
 
 Mesh *modelstoreGetMesh(Model *model, const char* name)
 {
@@ -206,31 +289,38 @@ Material *modelstoreCreateMaterial(CObject *object, const char *name)
 {
     if (name)
     {
-        Material *material = memory_aloc(sizeof(Material));
-        memset(material,0,sizeof(Material));
-        
-        objectInit((GObject*)material, (GObject*)object, 0, OBJ_MATERIAL);
+        // Recycle material here because we dont want duplicates
+        Material *material = modelstoreGetMaterial(name);
 
-        strncpy(material->name,name,sizeof(material->name));
-        
+        if (NULL == material)
+        {
+            material = memory_aloc(sizeof(Material));
+            memset(material,0,sizeof(Material));
+
+            objectInit((GObject*)material, (GObject*)object, 0, OBJ_MATERIAL);
+
+            strncpy(material->name,name,sizeof(material->name));
+
+            material->refCount++;
+
+            if (NULL == _material_first)
+            {
+                _material_first = material;
+                _material_last = material;
+            }
+            else
+            {
+                Material *prev = _material_last;
+                _material_last = material;
+                prev->next = (GObject*)material;
+            }
+        }
+
         if (object)
         {
             vertexReplaceMaterial(object,material);
-        }        
-    
-        if (NULL == _material_first)
-        {
-            _material_first = material;
-            _material_last = material;            
         }
-        else
-        {
-            Material *prev = _material_last;
-            _material_last = material;                        
-            prev->next = (GObject*)material;
-        }
-        material->refCount++;
-        
+
 #ifdef _DEBUG_CONFIG        
         LOG("Creating material %s\n",name);        
 #endif  
@@ -505,9 +595,11 @@ Material *modelstoreGetMaterial(const char*name)
                 return material;
             }
         }
-       
-        ERROR("No material \"%s\" found!\n",name?name:UNKNOWN_SYMBOL);
-        
+
+#ifdef _DEBUG
+        LOG("No material \"%s\" found!\n",name?name:UNKNOWN_SYMBOL);
+#endif
+
         return NULL;
     }
     
@@ -538,42 +630,50 @@ void modelstoreClear()
     LOG("Clearing: vertex count=%i\n",
         _modelstore_vertex_count);
 
-        
+    char s1[GM_VERTEX_BUFFER_SIZE];
+    
     for (Model *model = _modelstore_first; NULL != isObject((GObject*)model);)
     {
+        int cobjectCount = 0;
+        destroyAllMea((CObject*)model);
+        
         for (CObject *object = isCObject(ANY_COBJECT,model->first); NULL != isCObject(ANY_COBJECT,object); )
         {    
-            Solid *solid = (Solid*)isCObject(OBJ_SOLID,object);
-            Mesh *mesh = (Mesh*)isCObject(OBJ_MESH,object);
-            if (solid)
-            {                
-                CObject *s = isCObject(ANY_COBJECT,solid->next);
-                solidDestroy(solid);
-                object = s;
-            }
-            else
-            if (mesh)
+#ifdef _DEBUG_DELETING                            
+            LOG("Deleting #%i object [%s]\n",cobjectCount,vertexPath((GObject*)object,s1,sizeof(s1)));
+#endif            
+            CObject *next = isCObject(ANY_COBJECT,object->next);
+
+            if (object->methods.destroy)
             {
-                CObject *s = isCObject(ANY_COBJECT,mesh->next);                
-                meshDestroy(mesh);
-                object = s;
-            }
+                object->methods.destroy(object);
+            }                
             else
             {
-                if (object->methods.destroy)
-                {
-                    object->methods.destroy(object);
-                }
+                FATAL("Can not destroy object [%s]\n",vertexPath((GObject*)object,s1,sizeof(s1)));
             }
+            
+            cobjectCount++;
+            object = next;
         }
         
+        if (model->comments)
+        {
+            memory_free(model->comments);
+        }
+        
+        model->magic  = 0;
         Model *m = (Model*)model->next;
+        model->next = NULL;
+        model->first = NULL;
         memory_free(model);
-        model = m;
+        model = m;        
     }
-    
+
     _modelstore_first = NULL;
     _modelstore_last = NULL;
+    
+ /*
  
     for (Material* material = _material_first; NULL != material; )
     {
@@ -581,19 +681,19 @@ void modelstoreClear()
         vertexDestroyMaterial(material);
         material = m;
     }
- 
-    _modelstore_vertex_count = 0;
     
     _material_first = NULL;
-    _material_last = NULL;
+    _material_last = NULL;    
+ */
+  
+    _modelstore_vertex_count = 0;
+    
 
-#ifdef _DEBUG  
+#ifdef _DEBUG_MEMORY
     memory_check();
 #endif    
     
     initModelstore();
-    
-    // ???: Material and Solid should be cleared here too
 }
 
 Vertex *modelstoreGetVertex(Polygon *polygon, IndexType index)
@@ -646,12 +746,10 @@ const char* modelstoreReport(const Model *model, char *buffer, size_t size)
                 object = (const CObject *)gobjectConstIterate(modelIter))
         {
             count++;
-            CIter iter = gobjectCreateConstIterator(object,0);            
-            for (const Vertex *vertex = (const Vertex *)gobjectConstIterate(iter);
-                    vertex;
-                    vertex = (const Vertex *)gobjectConstIterate(iter))
+            
+            if (object->methods.objectSize)
             {
-                vcount++;
+                vcount += object->methods.objectSize(object);
             }
                 
             const Solid *solid = (const Solid *)isCObject(OBJ_SOLID,object);

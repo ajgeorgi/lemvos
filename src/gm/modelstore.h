@@ -8,6 +8,7 @@
 */
 
 #include "vertex.h"
+#include "matter.h"
 
 extern void initModelstore();
 
@@ -17,8 +18,11 @@ extern Solid *modelstoreCreateSolid(Model *model, const char* name);
 extern Solid *modelstoreGetSolid(Model *model, const char* name);
 extern int modelstoreMoveSolidToBottom(Solid *solid);
 
-extern Mesh *modelstoreCreateMesh(Model *model, const char* name);
+extern Mesh *modelstoreCreateMesh(Model *model, const char* name, int size);
 extern Mesh *modelstoreGetMesh(Model *model, const char* name);
+extern Vertex *modelstoreCreateVertex(Mesh *mesh, EPoint *v);
+
+Component *modelstoreCreateComponent(Model *model, const char* name, int size);
 
 extern Mea *modelstoreCreateMeasurement(CObject *parent, const char *name);
 
