@@ -49,3 +49,8 @@ In (lemvos)/lib you can find some static binary libs needed to compile lemvos.
 Andrej Georgi: I am a free software engineer in germany and I love sailing and boats. 
 You can reach out for me by axgeorgi@gmail.com
 Let me know if you like lemvos.
+
+*** Support
+
+I do commit more features if you support with some STL boat models for testing.
+
